@@ -39,20 +39,35 @@ const render = (
       <div class="onscreen-buttons">
         <a
           href="#"
-          alt="Up"
-          onclick="window.pressUP()"
+          alt="Esc"
+          onclick="window.pressESC()"
         >
           <div>
-            Up
+	    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+              <text text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#fff" font-family="monospace" font-weight="bold" y="57%" x="50%">Esc</text>
+	    </svg>
           </div>
         </a>
         <a
           href="#"
-          alt="Down"
-          onclick="window.pressDOWN()"
+          alt="Up"
+          onclick="window.pressUP()"
         >
           <div>
-            Down
+	    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+	      <path d="M12 7.5l8 8-1.41 1.42L12 10.33l-6.59 6.59L4 15.5z"/>
+	    </svg>
+          </div>
+        </a>
+        <a
+          href="#"
+          alt="Tab"
+          onclick="window.pressTAB()"
+        >
+          <div>
+	    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+              <text text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#fff" font-family="monospace" font-weight="bold" y="57%" x="50%">Tab</text>
+	    </svg>
           </div>
         </a>
         <a
@@ -61,7 +76,20 @@ const render = (
           onclick="window.pressLEFT()"
         >
           <div>
-            Left
+	    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M7.5 12l8-8 1.42 1.41L10.33 12l6.59 6.59-1.42 1.41z"/>
+	    </svg>
+          </div>
+        </a>
+        <a
+          hr ef="#"
+          alt="Down"
+          onclick="window.pressDOWN()"
+        >
+          <div>
+	    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 16.5l-8-8 1.41-1.42L12 13.67l6.59-6.59L20 8.5z"/>
+            </svg>
           </div>
         </a>
         <a
@@ -70,16 +98,9 @@ const render = (
           onclick="window.pressRIGHT()"
         >
           <div>
-            Right
-          </div>
-        </a>
-        <a
-          href="#"
-          alt="Esc"
-          onclick="window.pressESC()"
-        >
-          <div>
-            Esc
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+	      <path d="M16.5 12l-8-8-1.41 1.41L13.67 12l-6.58 6.59 1.41 1.41z"/>
+            </svg>
           </div>
         </a>
         <a
@@ -89,16 +110,32 @@ const render = (
           onclick="window.toggleCTRL()"
         >
           <div>
-            Ctrl
+	    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+              <text text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#fff" font-family="monospace" font-weight="bold" y="57%" x="50%">Ctl</text>
+	    </svg>
+          </div>
+        </a>
+        <a
+	  id="onscreen-alt"
+          href="#"
+          alt="Alt"
+          onclick="window.toggleALT()"
+        >
+          <div>
+	    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+              <text text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#fff" font-family="monospace" font-weight="bold" y="57%" x="50%">Alt</text>
+	    </svg>
           </div>
         </a>
         <a
           href="#"
-          alt="Tab"
-          onclick="window.pressTAB()"
+          alt="Ent"
+          onclick="window.pressENTER()"
         >
           <div>
-            Tab
+	    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+              <text text-anchor="middle" dominant-baseline="middle" font-size="14" fill="#fff" font-family="monospace" font-weight="bold" y="57%" x="50%">Int</text>
+	    </svg>
           </div>
         </a>
       </div>

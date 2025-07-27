@@ -3,7 +3,7 @@
 #options {
   height: 16px;
   position: absolute;
-  right: 1em;
+  left: 1.5em;
   top: 1em;
   width: 16px;
   z-index: 20;
@@ -53,14 +53,12 @@
 
 #functions {
   position: fixed;
-  right: 2em;
-  top: 6em;
+  top: 5em;
   z-index: 20;
 
   > a {
     padding: 10px;
     position: absolute;
-    right: -10px;
     top: -40px;
     color: variables.$lgrey;
 
@@ -73,9 +71,8 @@
     display: none;
     width: 200px;
     height: 200px;
-    border: solid 2px rgba(255, 255, 255, 0.25);
     border-radius: 0.3em;
-    background-color: rgba(0, 0, 0, 0.85);
+    background-color: #0000007d;
     > a {
       bottom: 1em;
       right: 2em;
@@ -102,10 +99,12 @@
     }
   }
 
+  #onscreen-alt.active,
   #onscreen-ctrl.active {
     display: inline-block;
     > div {
       background-color: lightgray;
     }
   }
+
 }

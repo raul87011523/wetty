@@ -23,6 +23,7 @@ export class Term extends Terminal {
     this.loadAddon(new WebLinksAddon());
     this.loadAddon(new ImageAddon());
     this.loadOptions = loadOptions;
+    this.keepTerminalActive = false;
   }
 
   resizeTerm(): void {
@@ -50,6 +51,9 @@ const toggleCTRL = (): void => {
   if (ctrlButton) {
     if (ctrlFlag) {
       ctrlButton.classList.add('active');
+      if (altFlag) {
+        toggleALT();
+      }
     } else {
       ctrlButton.classList.remove('active');
     }
@@ -81,6 +85,44 @@ const simulateCTRLAndKey = (key: string): void => {
   window.wetty_term?.input(`${String.fromCharCode(key.toUpperCase().charCodeAt(0) - 64)}`, false);
 }
 
+
+const altButton = document.getElementById('onscreen-alt');
+let altFlag = false; // This indicates whether the ALT key is pressed or not
+
+/**
+ * Toggles the state of the `altFlag` variable and updates the visual state
+ * of the `altButton` element accordingly. If `altFlag` is set to `true`,
+ * the `active` class is added to the `altButton`; otherwise, it is removed.
+ * After toggling, the terminal (`wetty_term`) is focused if it exists.
+ */
+const toggleALT = (): void => {
+  altFlag = !altFlag;
+  if (altButton) {
+    if (altFlag) {
+      altButton.classList.add('active');
+      if (ctrlFlag) {
+        toggleCTRL();
+      }
+    } else {
+      altButton.classList.remove('active');
+    }
+  }
+  window.wetty_term?.focus();
+}
+
+/**
+ * Simulates a ALT + key press by sending the corresponding character
+ * (converted from the key's ASCII code) to the terminal. This function
+ * is intended to be used in conjunction with the `toggleALT` function
+ * to handle keyboard shortcuts.
+ *
+ * @param key - The key that was pressed, which will be converted to
+ *              its corresponding character code.
+ */
+const simulateALTAndKey = (key: string): void => {
+  window.wetty_term?.input(`\x1b${key}`, false);
+}
+
 /**
  * Handles the keydown event for the CTRL key. When the CTRL key is pressed,
  * it sets the `ctrlFlag` variable to true and updates the visual state of
@@ -103,6 +145,19 @@ document.addEventListener('keyup', (e) => {
     }
     toggleCTRL();
   }
+  if (altFlag) {
+    if (e.key.length === 1 && e.key.match(/^[a-zA-Z0-9]$/)) {
+      simulateALTAndKey(e.key);
+      // delayed backspace is needed to remove the character added to the terminal
+      // when ALT + key is pressed.
+      // this is a workaround because e.preventDefault() cannot be used.
+      _.debounce(() => {
+        simulateBackspace();
+      }, 100)();
+    }
+    simulateALTAndKey(e.key);
+    toggleALT();
+  }
 });
 
 /**
@@ -114,8 +169,13 @@ const pressESC = (): void => {
   if (ctrlFlag) {
     toggleCTRL();
   }
+  if (altFlag) {
+    toggleALT();
+  }
   window.wetty_term?.input('\x1B', false);
-  window.wetty_term?.focus();
+  if (window.wetty_term.keepTerminalActive) {
+    window.wetty_term?.focus();
+  }
 }
 
 /**
@@ -127,8 +187,13 @@ const pressUP = (): void => {
   if (ctrlFlag) {
     toggleCTRL();
   }
+  if (altFlag) {
+    toggleALT();
+  }
   window.wetty_term?.input('\x1B[A', false);
-  window.wetty_term?.focus();
+  if (window.wetty_term.keepTerminalActive) {
+    window.wetty_term?.focus();
+  }
 }
 
 /**
@@ -140,8 +205,13 @@ const pressDOWN = (): void => {
   if (ctrlFlag) {
     toggleCTRL();
   }
+  if (altFlag) {
+    toggleALT();
+  }
   window.wetty_term?.input('\x1B[B', false);
-  window.wetty_term?.focus();
+  if (window.wetty_term.keepTerminalActive) {
+    window.wetty_term?.focus();
+  }
 }
 
 /**
@@ -153,8 +223,31 @@ const pressTAB = (): void => {
   if (ctrlFlag) {
     toggleCTRL();
   }
+  if (altFlag) {
+    toggleALT();
+  }
   window.wetty_term?.input('\x09', false);
-  window.wetty_term?.focus();
+  if (window.wetty_term.keepTerminalActive) {
+    window.wetty_term?.focus();
+  }
+}
+
+/**
+ * Simulates pressing the Enter key by sending the Enter character (ASCII code A)
+ * to the terminal. If the CTRL key is active, it toggles the CTRL state off.
+ * After sending the ENTER character, the terminal is focused.
+ */
+const pressENTER = (): void => {
+  if (ctrlFlag) {
+    toggleCTRL();
+  }
+  if (altFlag) {
+    toggleALT();
+  }
+  window.wetty_term?.input('\x0A', false);
+  if (window.wetty_term.keepTerminalActive) {
+    window.wetty_term?.focus();
+  }
 }
 
 /**
@@ -166,8 +259,13 @@ const pressLEFT = (): void => {
   if (ctrlFlag) {
     toggleCTRL();
   }
+  if (altFlag) {
+    toggleALT();
+  }
   window.wetty_term?.input('\x1B[D', false);
-  window.wetty_term?.focus();
+  if (window.wetty_term.keepTerminalActive) {
+    window.wetty_term?.focus();
+  }
 }
 
 /**
@@ -179,8 +277,13 @@ const pressRIGHT = (): void => {
   if (ctrlFlag) {
     toggleCTRL();
   }
+  if (altFlag) {
+    toggleALT();
+  }
   window.wetty_term?.input('\x1B[C', false);
-  window.wetty_term?.focus();
+  if (window.wetty_term.keepTerminalActive) {
+    window.wetty_term?.focus();
+  }
 }
 
 /**
@@ -205,13 +308,26 @@ declare global {
     loadOptions: (conf: Options) => void;
     toggleFunctions?: () => void;
     toggleCTRL? : () => void;
+    toggleALT? : () => void;
     pressESC?: () => void;
     pressUP?: () => void;
     pressDOWN?: () => void;
     pressTAB?: () => void;
+    pressENTER?: () => void;
     pressLEFT?: () => void;
     pressRIGHT?: () => void;
   }
+}
+
+/**
+* Check is keyboard active
+*/
+function isKeyboardActive(): true {
+  const element = document.querySelector('div#functions > div.onscreen-buttons');
+  if (element?.classList.contains('active')) {
+    return true;
+  }
+  return false;
 }
 
 export function terminal(socket: Socket): Term | undefined {
@@ -220,17 +336,99 @@ export function terminal(socket: Socket): Term | undefined {
   termElement.innerHTML = '';
   term.open(termElement);
   configureTerm(term);
+  term._core._onFocus.event(() => {
+    if (isKeyboardActive()) {
+      term.keepTerminalActive = true;
+    } else {
+      term.keepTerminalActive = false;
+    }
+  });
   window.onresize = function onResize() {
     term.resizeTerm();
   };
   window.wetty_term = term;
   window.toggleFunctions = toggleFunctions;
   window.toggleCTRL = toggleCTRL;
+  window.toggleALT = toggleALT;
   window.pressESC = pressESC;
   window.pressUP = pressUP;
   window.pressDOWN = pressDOWN;
   window.pressTAB = pressTAB;
+  window.pressENTER = pressENTER;
   window.pressLEFT = pressLEFT;
   window.pressRIGHT = pressRIGHT;
   return term;
 }
+
+/**
+*Vertical Drag & Drop for Onscreen Keyboard
+*[EN] Vertical drag and drop for the virtual keyboard using pointer events (desktop and mobile).
+*[ES] Arrastrar solo verticalmente el teclado virtual usando eventos de puntero (desktop y móvil).
+*/
+const keyboard = document.getElementById('functions'); // [EN] Reference to the keyboard. [ES] Referencia al teclado.
+const handle = document.querySelector('#functions .toggler'); // [EN] Reference to the drag handle. [ES] Referencia al "handle" para arrastrar.
+
+let isDragging = false; // [EN] Is the keyboard being dragged? [ES] ¿Se está arrastrando el teclado?
+let startY = 0;         // [EN] Initial Y position. [ES] Posición Y inicial.
+let startTop = 0;       // [EN] Initial top position. [ES] Top inicial del teclado.
+
+// [EN] Handler for the start of drag (mousedown/touchstart/pointerdown)
+// [ES] Manejador para inicio de arrastre (mousedown/touchstart/pointerdown)
+function onPointerDown(e) {
+  isDragging = true;
+  keyboard.style.transition = 'none'; // [EN] Remove animation while dragging. [ES] Quita la animación mientras se arrastra.
+  startY = e.type.startsWith('touch') ? e.touches[0].clientY : (e.clientY ?? e.pageY);
+  startTop = keyboard.getBoundingClientRect().top;
+  document.body.style.userSelect = 'none'; // [EN] Prevent text selection. [ES] Evita seleccionar texto al arrastrar.
+}
+
+/**
+* [EN] Handler for dragging movement (mousemove/touchmove/pointermove)
+* [ES] Manejador para el movimiento (mousemove/touchmove/pointermove)
+*/
+function onPointerMove(e) {
+  if (!isDragging) return;
+  // [EN] Prevent scrolling the page while dragging
+  // [ES] Evita el scroll de la página mientras arrastrás
+  if (e.type.startsWith('touch')) {
+    e.preventDefault();
+  }
+  let currentY = e.type.startsWith('touch') ? e.touches[0].clientY : (e.clientY ?? e.pageY);
+  let delta = currentY - startY;
+  let newTop = startTop + delta;
+
+  // [EN] Clamp position: can't go above the top or below the bottom of the window.
+  // [ES] Limita la posición: no puede salir de la ventana ni por arriba ni por abajo.
+  newTop = Math.max(0, Math.min(window.innerHeight - keyboard.offsetHeight, newTop));
+
+  keyboard.style.top = newTop + 'px';
+  keyboard.style.bottom = 'auto'; // [EN] Override bottom so 'top' works. [ES] Override a bottom para usar 'top'.
+}
+
+// [EN] Handler for end of drag (mouseup/touchend/pointerup)
+// [ES] Manejador para fin de arrastre (mouseup/touchend/pointerup)
+function onPointerUp(e) {
+  isDragging = false;
+  document.body.style.userSelect = '';
+  keyboard.style.transition = '';
+}
+
+// [EN] Register listeners for mouse and touch events.
+// [ES] Registra los listeners para mouse y touch.
+handle.addEventListener('mousedown', onPointerDown);
+window.addEventListener('mousemove', onPointerMove);
+window.addEventListener('mouseup', onPointerUp);
+
+handle.addEventListener('touchstart', onPointerDown, {passive: false});
+window.addEventListener('touchmove', onPointerMove, {passive: false});
+window.addEventListener('touchend', onPointerUp);
+
+// [EN] Optionally, reset keyboard position when window is resized (optional).
+// [ES] Opcional: restablecer la posición si se redimensiona la ventana.
+window.addEventListener('resize', () => {
+  if (parseInt(keyboard.style.top || '0') > window.innerHeight - keyboard.offsetHeight) {
+    keyboard.style.top = (window.innerHeight - keyboard.offsetHeight) + 'px';
+  }
+});
+
+

@@ -10,7 +10,7 @@ body {
   background-color: variables.$black;
   height: 100%;
   margin: 0;
-  overflow: hidden;
+  overflow: auto;
 
   .toastify {
     border-radius: 0;
@@ -20,6 +20,6 @@ body {
 
 .xterm {
   .xterm-viewport {
-    overflow-y: hidden;
+    overflow-y: auto;
   }
 }
