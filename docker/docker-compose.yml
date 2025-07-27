@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  wetty:
+    build:
+      context: . # Directorio donde está tu Dockerfile.dev/Directory where your Dockerfile.dev is located
+      dockerfile: Dockerfile.dev
+    container_name: wetty-dev
+    image: wetty:dev # Nombre y tag personalizados/Custom name and tag
+    ports:
+      - "3000:3000"
+    #volumes:
+      #- ${HOME}/containers/wetty/conf/load.js:/usr/src/app/build/client/wetty/term/load.js
+    #volumes:
+      #- ./share:/home/testuser # is used only for testing
+    command: --base / --allow-iframe
+    networks:
+      - local
+    restart: unless-stopped
+networks:
+  local:
+    external: true  # Use the existing 'local' network from tmate-server
+

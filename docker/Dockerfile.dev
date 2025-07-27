@@ -1,0 +1,33 @@
+#Usa Node 20 (v20.x.x)
+FROM node:20-bullseye
+
+# Establecer el directorio de trabajo
+WORKDIR /usr/src/app
+
+# Instalar dependencias necesarias
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    build-essential \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar pnpm globalmente
+RUN npm install -g pnpm
+
+# Clonar el proyecto desde GitHub
+RUN git clone --branch dev --single-branch  https://github.com/raul87011523/wetty.git .
+
+# Instalar dependencias y compilar
+RUN pnpm install && pnpm build
+
+# Crear usuario para login
+# Solo para test
+#RUN adduser testuser && echo "testuser:1234" | chpasswd
+
+# Expone el puerto en el que se ejecutará wetty
+EXPOSE 3000
+
+# Entrypoint de ejecución final
+ENTRYPOINT ["node", "build/main.js"]
+
