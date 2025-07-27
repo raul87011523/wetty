@@ -16,10 +16,6 @@
     right: 1em;
     top: 0;
     z-index: 20;
-
-    :hover {
-      color: variables.$white;
-    }
   }
 
   .editor {
@@ -61,10 +57,6 @@
     position: absolute;
     top: -40px;
     color: variables.$lgrey;
-
-    :hover {
-      color: variables.$white;
-    }
   }
 
   .onscreen-buttons {

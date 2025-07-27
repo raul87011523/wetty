@@ -24,6 +24,11 @@ export class Term extends Terminal {
     this.loadAddon(new ImageAddon());
     this.loadOptions = loadOptions;
     this.keepTerminalActive = false;
+	const foreground = this.loadOptions().xterm.theme.foreground;
+	const keyboard = document.querySelector('#functions .toggler');
+	const options = document.querySelector('#options .toggler');
+	keyboard.style.color = foreground;
+	options.style.color = foreground;
   }
 
   resizeTerm(): void {
