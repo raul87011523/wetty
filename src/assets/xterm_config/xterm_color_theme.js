@@ -20,7 +20,7 @@ window.inflateOptions([
     type: 'enum',
     name: 'Theme',
     description: 'The theme for the terminal.',
-    path: ['xterm', 'fontWeight'],
+    path: ['xterm', 'theme', 'terminal'],
     enum: [
       'default',
       'reader',
