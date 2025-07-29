@@ -16,14 +16,14 @@ RUN apt-get update && apt-get install -y \
 RUN npm install -g pnpm
 
 # Clonar el proyecto desde GitHub
-RUN git clone --branch dev --single-branch  https://github.com/raul87011523/wetty.git .
+RUN git clone --branch dev1 --single-branch  https://github.com/raul87011523/wetty.git .
 
 # Instalar dependencias y compilar
 RUN pnpm install && pnpm build
 
 # Crear usuario para login
 # Solo para test
-#RUN adduser testuser && echo "testuser:1234" | chpasswd
+RUN adduser testuser && echo "testuser:1234" | chpasswd
 
 # Expone el puerto en el que se ejecutará wetty
 EXPOSE 3000

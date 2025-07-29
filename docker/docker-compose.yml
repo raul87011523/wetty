@@ -8,11 +8,11 @@ services:
     container_name: wetty-dev
     image: wetty:dev # Nombre y tag personalizados/Custom name and tag
     ports:
-      - "3000:3000"
+      - "4000:3000"
     #volumes:
       #- ${HOME}/containers/wetty/conf/load.js:/usr/src/app/build/client/wetty/term/load.js
-    #volumes:
-      #- ./share:/home/testuser # is used only for testing
+    volumes:
+      - ./share:/home/testuser # is used only for testing
     command: --base / --allow-iframe
     networks:
       - local
