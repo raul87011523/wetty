@@ -17,6 +17,17 @@ const selectionColorOpacityOption = {
 
 window.inflateOptions([
   {
+    type: 'enum',
+    name: 'Theme',
+    description: 'The theme for the terminal.',
+    path: ['xterm', 'fontWeight'],
+    enum: [
+      'default',
+      'reader',
+      'dracula',
+    ],
+  },
+  {
     type: 'color',
     name: 'Foreground Color',
     description: 'The default foreground (text) color.',
