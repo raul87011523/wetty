@@ -2,6 +2,8 @@
  * Create WeTTY server
  * @module WeTTy
  */
+import fs from 'fs';
+import path from 'path';
 import express from 'express';
 import gc from 'gc-stats';
 import { Gauge, collectDefaultMetrics } from 'prom-client';
@@ -27,9 +29,6 @@ const wettyConnections = new Gauge({
   name: 'wetty_connections',
   help: 'number of active socket connections to wetty',
 });
-
-const fs = require('fs');
-const path = require('path');
 
 /**
  * Starts WeTTy Server
