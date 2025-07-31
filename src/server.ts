@@ -28,6 +28,9 @@ const wettyConnections = new Gauge({
   help: 'number of active socket connections to wetty',
 });
 
+const fs = require('fs');
+const path = require('path');
+
 /**
  * Starts WeTTy Server
  * @name startServer
@@ -86,3 +89,36 @@ export async function decorateServerWithSsh(
   });
   return io;
 }
+
+const app = express();
+
+// Endpoint to list themes
+app.get('/api/themes', (req, res) => {
+  const themesDir = path.join(__dirname, 'client/xterm_config/themes');
+  fs.readdir(themesDir, (err, files) => {
+    if (err) {
+      return [];
+    }
+    const jsonFiles = files
+      .filter(file => file.endsWith('.json'))
+      .map(file => file.replace(/\.json$/, ''));
+    res.json(jsonFiles);
+  });
+});
+
+app.get('/api/themes/:filename', (req, res) => {
+  try {
+    // Retrieve the filename from the request parameters
+    const filename = req.params.filename;
+    // Validate that the file is a JSON file (security)
+    if (!filename.endsWith('.json')) {
+      return {};
+    }
+    // Load the theme and send it as JSON response
+    const theme = loadTheme(filename);
+    res.json(theme);
+  } catch (error) {
+    return {};
+  }
+});
+

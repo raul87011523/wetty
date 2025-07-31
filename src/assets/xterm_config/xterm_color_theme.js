@@ -1,4 +1,4 @@
-const { getThemeNames } = require('./theme_utils');
+import { getThemeNames } from './theme_utils.js';
 
 const selectionColorOption = {
   type: 'color',
@@ -17,13 +17,15 @@ const selectionColorOpacityOption = {
   max: 1,
 };
 
+const themeNames = await getThemeNames();
+
 const options = [
   {
     type: 'enum',
     name: 'Theme',
     description: 'The theme for the terminal.',
     path: ['xterm', 'theme', 'theme'],
-    enum: getThemeNames(),
+    enum: themeNames,
   },
   {
     type: 'color',
