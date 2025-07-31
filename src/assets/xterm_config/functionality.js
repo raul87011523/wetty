@@ -1,3 +1,5 @@
+const { loadTheme } = require('./theme_utils');
+
 function optionGenericGet() {
   return this.el.querySelector('input').value;
 }
@@ -63,6 +65,9 @@ function inflateOptions(optionsSchema) {
           optionEl.value = varriant;
           el.querySelector('select').appendChild(optionEl);
         });
+	if (option.path[2] == 'theme'){
+	  el.querySelector('select').dataset.isTheme= 'true';
+	}
         option.get = optionEnumGet.bind(option);
         option.set = optionEnumSet.bind(option);
         break;
@@ -139,7 +144,7 @@ if (window.top === window)
     'Error: Page is top level. This page is supposed to be accessed from inside WeTTY.',
   );
 
-function saveConfig() {
+function saveConfig(ev) {
   const newConfig = {};
   allOptions.forEach(option => {
     let newValue = option.get();
@@ -153,6 +158,12 @@ function saveConfig() {
       newValue = JSON.parse(newValue);
     setItem(newConfig, option.path, newValue);
   });
+  if (ev.target.dataset.isTheme === 'true') {
+    const theme = ev.target.value;
+    if (theme){
+      newConfig.xterm.theme = loadTheme(`${theme}.json`);
+    }
+  }
   window.wetty_save_config(newConfig);
 }
 

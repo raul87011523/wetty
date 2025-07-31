@@ -43,7 +43,7 @@ window.loadOptions({
     cancelEvents: false,
 
     theme: {
-      terminal: 'default',
+      theme: 'default',
       foreground: '#ffffff',
       background: '#000000',
       cursor: '#ffffff',

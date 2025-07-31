@@ -1,3 +1,5 @@
+const { getThemeNames } = require('./theme_utils');
+
 const selectionColorOption = {
   type: 'color',
   name: 'Selection Color',
@@ -15,17 +17,13 @@ const selectionColorOpacityOption = {
   max: 1,
 };
 
-window.inflateOptions([
+const options = [
   {
     type: 'enum',
     name: 'Theme',
     description: 'The theme for the terminal.',
-    path: ['xterm', 'theme', 'terminal'],
-    enum: [
-      'default',
-      'reader',
-      'dracula',
-    ],
+    path: ['xterm', 'theme', 'theme'],
+    enum: getThemeNames(),
   },
   {
     type: 'color',
@@ -144,7 +142,9 @@ window.inflateOptions([
     description: 'Color for ANSI Bright White text.',
     path: ['xterm', 'theme', 'brightWhite'],
   },
-]);
+];
+
+window.inflateOptions(options);
 
 selectionColorOption.get = function getInput() {
   return (
