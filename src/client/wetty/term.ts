@@ -310,6 +310,7 @@ declare global {
     wetty_term?: Term;
     wetty_close_config?: () => void;
     wetty_save_config?: (newConfig: Options) => void;
+    wetty_themes?: {};
     clipboardData: DataTransfer;
     loadOptions: (conf: Options) => void;
     toggleFunctions?: () => void;
