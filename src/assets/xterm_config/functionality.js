@@ -1,5 +1,3 @@
-import { loadTheme } from './theme_utils.js';
-
 function optionGenericGet() {
   return this.el.querySelector('input').value;
 }
@@ -66,7 +64,7 @@ function inflateOptions(optionsSchema) {
           el.querySelector('select').appendChild(optionEl);
         });
         if (option.path[2] == 'theme'){
-          el.querySelector('select').dataset.isTheme= 'true';
+          el.querySelector('select').dataset.isTheme = 'true';
         }
         option.get = optionEnumGet.bind(option);
         option.set = optionEnumSet.bind(option);
@@ -144,7 +142,7 @@ if (window.top === window)
     'Error: Page is top level. This page is supposed to be accessed from inside WeTTY.',
   );
 
-function async saveConfig(ev) {
+function saveConfig(ev) {
   const newConfig = {};
   allOptions.forEach(option => {
     let newValue = option.get();
@@ -159,12 +157,10 @@ function async saveConfig(ev) {
     setItem(newConfig, option.path, newValue);
   });
   if (ev.target.dataset.isTheme === 'true') {
-    const themeName = ev.target.value;
-    if (themeName){
-      const theme = await loadTheme(`${themeName}.json`);
-      if (Object.keys(theme).length > 0) {
-        newConfig.xterm.theme = theme;
-      }
+    const name = ev.target.value;
+    const themes = window.wetty_themes;
+    if (themes[name]) {
+      newConfig.xterm.theme = themes[name];
     }
   }
   window.wetty_save_config(newConfig);

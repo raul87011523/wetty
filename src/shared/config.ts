@@ -13,6 +13,8 @@ import type { Config, SSH, Server, SSL } from './interfaces';
 import type winston from 'winston';
 import type { Arguments } from 'yargs';
 
+const THEME_DIR = path.join(__dirname, 'themes');
+
 type confValue =
   | boolean
   | string
@@ -62,6 +64,55 @@ function parseLogLevel(
 }
 
 /**
+ * [EN] Returns an array with the names of all JSON files in the 'theme' directory.
+ * [ES] Devuelve un array con los nombres de todos los archivos JSON en el directorio 'theme'.
+ */
+
+async function getThemeNames() {
+  const themesDir = path.join(__dirname, 'client/xte/themes');
+  fs.readdir(THEME_DIR, (err, files) => {
+    if (err) {
+      return [];
+    }
+    const names = files
+      .filter(file => file.endsWith('.json'))
+      .map(file => file.replace(/\.json$/, ''));
+    return names;
+  });
+}
+
+/**
+ * [EN] Given a filename, loads and parses its JSON content from the 'theme' directory.
+ * [ES] Dado un nombre de archivo, carga y parsea su contenido JSON desde el directorio 'theme'.
+ * @param {string} filename - The name of the JSON file (e.g., 'reader.json')
+ */
+async function loadTheme(filename) {
+  try {
+    // Validate that the file is a JSON file (security)
+    if (!filename.endsWith('.json')) {
+      return {};
+    }
+    const filePath = path.join(THEME_DIR, filename);
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(raw);
+  } catch (error) {
+    return {};
+  }
+}
+
+async function loadThemes() {
+  const themes = {};
+  const themeNames = await getThemeNames();	
+  for (const name of themeNames) {
+    const theme = await loadTheme(`${name}.json`);
+    if (Object.keys(theme).length > 0) {
+      themes[name] = theme;
+    }
+  }
+  return themes
+}
+
+/**
  * Load JSON5 config from file and merge with default args
  * If no path is provided the default config is returned
  *
@@ -69,6 +120,7 @@ function parseLogLevel(
  * @returns variable cast to boolean
  */
 export async function loadConfigFile(filepath?: string): Promise<Config> {
+  const themes = await loadThemes();
   if (isUndefined(filepath)) {
     return {
       ssh: sshDefault,
@@ -76,6 +128,7 @@ export async function loadConfigFile(filepath?: string): Promise<Config> {
       command: defaultCommand,
       forceSSH: forceSSHDefault,
       logLevel: defaultLogLevel,
+      themes: themes,
     };
   }
   const content = await fs.readFile(path.resolve(filepath));
@@ -93,6 +146,7 @@ export async function loadConfigFile(filepath?: string): Promise<Config> {
       : ensureBoolean(parsed.forceSSH),
     ssl: parsed.ssl,
     logLevel: parseLogLevel(defaultLogLevel, parsed.logLevel),
+    themes: themes,
   };
 }
 

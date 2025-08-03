@@ -2,8 +2,6 @@
  * Create WeTTY server
  * @module WeTTy
  */
-import fs from 'fs';
-import path from 'path';
 import express from 'express';
 import gc from 'gc-stats';
 import { Gauge, collectDefaultMetrics } from 'prom-client';
@@ -41,8 +39,9 @@ export const start = (
   command: string = defaultCommand,
   forcessh: boolean = forceSSHDefault,
   ssl: SSL | undefined = undefined,
+  themes: Record<string, object> = {},
 ): Promise<SocketIO.Server> =>
-  decorateServerWithSsh(express(), ssh, serverConf, command, forcessh, ssl);
+  decorateServerWithSsh(express(), ssh, serverConf, command, forcessh, ssl, themes);
 
 export async function decorateServerWithSsh(
   app: Express,
@@ -51,6 +50,7 @@ export async function decorateServerWithSsh(
   command: string = defaultCommand,
   forcessh: boolean = forceSSHDefault,
   ssl: SSL | undefined = undefined,
+  themes: Record<string, object> = {},
 ): Promise<SocketIO.Server> {
   const logger = getLogger();
   if (ssh.key) {
@@ -86,38 +86,6 @@ export async function decorateServerWithSsh(
       wettyConnections.dec();
     }
   });
+  io.themes = themes;
   return io;
 }
-
-const app = express();
-
-// Endpoint to list themes
-app.get('/api/themes', (req, res) => {
-  const themesDir = path.join(__dirname, 'client/xterm_config/themes');
-  fs.readdir(themesDir, (err, files) => {
-    if (err) {
-      return [];
-    }
-    const jsonFiles = files
-      .filter(file => file.endsWith('.json'))
-      .map(file => file.replace(/\.json$/, ''));
-    res.json(jsonFiles);
-  });
-});
-
-app.get('/api/themes/:filename', (req, res) => {
-  try {
-    // Retrieve the filename from the request parameters
-    const filename = req.params.filename;
-    // Validate that the file is a JSON file (security)
-    if (!filename.endsWith('.json')) {
-      return {};
-    }
-    // Load the theme and send it as JSON response
-    const theme = loadTheme(filename);
-    res.json(theme);
-  } catch (error) {
-    return {};
-  }
-});
-

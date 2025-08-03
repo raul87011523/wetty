@@ -127,7 +127,7 @@ if (!opts.help) {
     .then((config) => mergeCliConf(opts, config))
     .then((conf) => {
       setLevel(conf.logLevel);
-      start(conf.ssh, conf.server, conf.command, conf.forceSSH, conf.ssl);
+      start(conf.ssh, conf.server, conf.command, conf.forceSSH, conf.ssl, conf.themes);
     })
     .catch((err: Error) => {
       logger().error('error in server', { err });
