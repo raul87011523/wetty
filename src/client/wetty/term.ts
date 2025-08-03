@@ -14,6 +14,7 @@ export class Term extends Terminal {
   socket: Socket;
   fitAddon: FitAddon;
   loadOptions: () => Options;
+  wetty_themes: {};
 
   constructor(socket: Socket) {
     super({ allowProposedApi: true });
