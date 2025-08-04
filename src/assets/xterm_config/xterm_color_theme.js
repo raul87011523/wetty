@@ -16,7 +16,7 @@ const selectionColorOpacityOption = {
 };
 
 // Get all names of themes
-const themes = window.?wetty_themes || {};
+const themes = window.wetty_themes || {};
 const themeNames = Object.keys(themes);
 
 const options = [
