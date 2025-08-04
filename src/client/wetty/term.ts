@@ -14,7 +14,6 @@ export class Term extends Terminal {
   socket: Socket;
   fitAddon: FitAddon;
   loadOptions: () => Options;
-  themes: Record<string, object>;
 
   constructor(socket: Socket) {
     super({ allowProposedApi: true });
@@ -30,7 +29,6 @@ export class Term extends Terminal {
     const options = document.querySelector('#options .toggler');
     keyboard.style.color = foreground;
     options.style.color = foreground;
-    this.themes = socket.themes;
   }
 
   resizeTerm(): void {
@@ -350,6 +348,9 @@ export function terminal(socket: Socket): Term | undefined {
     } else {
       term.keepTerminalActive = false;
     }
+  });
+  socket.on('themes', (themes) => {
+    window.wetty_themes = themes;
   });
   window.onresize = function onResize() {
     term.resizeTerm();

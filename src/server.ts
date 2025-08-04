@@ -78,6 +78,7 @@ export async function decorateServerWithSsh(
     wettyConnections.inc();
 
     try {
+      socket.emit('themes', themes);
       const args = await getCommand(socket, ssh, command, forcessh);
       logger.debug('Command Generated', { cmd: args.join(' ') });
       await spawn(socket, args);
@@ -86,6 +87,5 @@ export async function decorateServerWithSsh(
       wettyConnections.dec();
     }
   });
-  io.themes = themes;
   return io;
 }
