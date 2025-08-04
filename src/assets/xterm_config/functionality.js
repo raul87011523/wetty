@@ -4,10 +4,22 @@ function optionGenericGet() {
 function optionGenericSet(value) {
   this.el.querySelector('input').value = value;
 }
+function optionEnumCreate(value) {
+  const select = this.el.querySelector('select');
+  if (select.options.length === 0) {
+    for (const item of getThemes()) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.text = value;
+      select.appendChild(option);
+    }
+  }
+}
 function optionEnumGet() {
   return this.el.querySelector('select').value;
 }
 function optionEnumSet(value) {
+  optionEnumCreate(value);
   this.el.querySelector('select').value = value;
 }
 function optionBoolGet() {
