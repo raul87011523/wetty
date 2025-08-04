@@ -79,7 +79,7 @@ function inflateOptions(optionsSchema) {
         }
         option.get = optionEnumGet.bind(option);
         option.set = optionEnumSet.bind(option);
-	option.create = optionEnumCreate.bin(option);
+        option.create = optionEnumCreate.bind(option);
         break;
 
       case 'text':
