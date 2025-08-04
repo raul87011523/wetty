@@ -101,7 +101,7 @@ async function loadTheme(filename) {
   }
 }
 
-async function loadThemes() {
+export async function loadThemes() {
   const themes = {};
   const themeNames = await getThemeNames();	
   for (const name of themeNames) {

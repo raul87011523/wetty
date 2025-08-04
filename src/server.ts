@@ -9,6 +9,7 @@ import { getCommand } from './server/command.js';
 import { gcMetrics } from './server/metrics.js';
 import { server } from './server/socketServer.js';
 import { spawn } from './server/spawn.js';
+import { loadThemes } from './shared/config.js';
 import {
   sshDefault,
   serverDefault,
@@ -39,9 +40,8 @@ export const start = (
   command: string = defaultCommand,
   forcessh: boolean = forceSSHDefault,
   ssl: SSL | undefined = undefined,
-  themes: Record<string, object> = {},
 ): Promise<SocketIO.Server> =>
-  decorateServerWithSsh(express(), ssh, serverConf, command, forcessh, ssl, themes);
+  decorateServerWithSsh(express(), ssh, serverConf, command, forcessh, ssl);
 
 export async function decorateServerWithSsh(
   app: Express,
@@ -50,7 +50,6 @@ export async function decorateServerWithSsh(
   command: string = defaultCommand,
   forcessh: boolean = forceSSHDefault,
   ssl: SSL | undefined = undefined,
-  themes: Record<string, object> = {},
 ): Promise<SocketIO.Server> {
   const logger = getLogger();
   if (ssh.key) {
@@ -78,6 +77,7 @@ export async function decorateServerWithSsh(
     wettyConnections.inc();
 
     try {
+      const themes = await loadThemes();
       socket.emit('themes', themes);
       const args = await getCommand(socket, ssh, command, forcessh);
       logger.debug('Command Generated', { cmd: args.join(' ') });
