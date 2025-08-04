@@ -19,7 +19,7 @@ function optionEnumGet() {
   return this.el.querySelector('select').value;
 }
 function optionEnumSet(value) {
-  optionEnumCreate(value);
+  optionEnumCreate.call(this, value);
   this.el.querySelector('select').value = value;
 }
 function optionBoolGet() {
