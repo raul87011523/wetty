@@ -75,15 +75,15 @@ function parseLogLevel(
  */
 
 async function getThemeNames() {
-  fs.readdir(THEME_DIR, (err, files) => {
-    if (err) {
-      return [];
-    }
+  try {
+    const files = await fs.readdir(THEME_DIR);
     const names = files
       .filter(file => file.endsWith('.json'))
       .map(file => file.replace(/\.json$/, ''));
     return names;
-  });
+  } catch (err) {
+    return [];
+  }
 }
 
 /**
@@ -94,7 +94,7 @@ async function getThemeNames() {
 async function loadTheme(filename) {
   try {
     const filePath = path.join(THEME_DIR, filename);
-    const raw = fs.readFileSync(filePath, 'utf-8');
+    const raw = await fs.readFile(filePath, 'utf-8');
     return JSON.parse(raw);
   } catch (error) {
     return {};
