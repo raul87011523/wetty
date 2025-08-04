@@ -1,8 +1,8 @@
 {
 	"theme": "default",
-	"foreground": "#148536",
-	"background": "#ffffff",
-	"cursor": "#000000",
+	"foreground": "#ffffff",
+	"background": "#000000",
+	"cursor": "#ffffff",
 	"cursorAccent": "#a90a0a",
 	"selection": "#46c36cff",
 	"black": "#2e3436",
