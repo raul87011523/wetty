@@ -26,11 +26,13 @@ export class Term extends Terminal {
     this.loadOptions = loadOptions;
     this.keepTerminalActive = false;
     this.themes = {};
-    const foreground = this.loadOptions().xterm.theme.foreground;
-    const keyboard = document.querySelector('#functions .toggler');
-    const options = document.querySelector('#options .toggler');
-    keyboard.style.color = foreground;
-    options.style.color = foreground;
+    const foreground = this.loadOptions()?.xterm?.theme?.foreground;
+    if (foreground) {
+      const keyboard = document.querySelector('#functions .toggler');
+      const options = document.querySelector('#options .toggler');
+      keyboard.style.color = foreground;
+      options.style.color = foreground;
+    }
   }
 
   resizeTerm(): void {
