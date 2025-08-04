@@ -15,17 +15,13 @@ const selectionColorOpacityOption = {
   max: 1,
 };
 
-// Get all names of themes
-const themes = window.wetty_themes || {};
-const themeNames = Object.keys(themes);
-
 const options = [
   {
     type: 'enum',
     name: 'Theme',
     description: 'The theme for the terminal.',
     path: ['xterm', 'theme', 'theme'],
-    enum: themeNames,
+    enum: [],
   },
   {
     type: 'color',

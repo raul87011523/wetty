@@ -117,8 +117,16 @@ function setItem(json, path, item) {
   }
 }
 
+function getThemes(){
+  const themes = window.wetty_get_themes?.() || {};
+  return Object.keys(themes); 
+}
+
 window.loadOptions = config => {
   allOptions.forEach(option => {
+    if (option.name === 'Theme') {
+      option.enum = getThemes();
+    }
     let value = getItem(config, option.path);
     if (option.nullable === true && option.type === 'text' && value == null)
       value = null;
@@ -158,7 +166,7 @@ function saveConfig(ev) {
   });
   if (ev.target.dataset.isTheme === 'true') {
     const name = ev.target.value;
-    const themes = window.wetty_themes;
+    const themes = window.wetty_get_themes?.() || {};
     if (themes[name]) {
       newConfig.xterm.theme = themes[name];
     }

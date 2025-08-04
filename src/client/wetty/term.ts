@@ -14,6 +14,7 @@ export class Term extends Terminal {
   socket: Socket;
   fitAddon: FitAddon;
   loadOptions: () => Options;
+  themes: Record<string, object>; 
 
   constructor(socket: Socket) {
     super({ allowProposedApi: true });
@@ -24,6 +25,7 @@ export class Term extends Terminal {
     this.loadAddon(new ImageAddon());
     this.loadOptions = loadOptions;
     this.keepTerminalActive = false;
+    this.themes = {};
     const foreground = this.loadOptions().xterm.theme.foreground;
     const keyboard = document.querySelector('#functions .toggler');
     const options = document.querySelector('#options .toggler');
@@ -307,7 +309,7 @@ const toggleFunctions = (): void => {
 declare global {
   interface Window {
     wetty_term?: Term;
-    wetty_themes?: Record<string, object>;
+    wetty_get_themes?: () => Record<string, object>;
     wetty_close_config?: () => void;
     wetty_save_config?: (newConfig: Options) => void;
     clipboardData: DataTransfer;
@@ -350,7 +352,7 @@ export function terminal(socket: Socket): Term | undefined {
     }
   });
   socket.on('themes', (themes) => {
-    window.wetty_themes = themes;
+    term.themes = themes;
   });
   window.onresize = function onResize() {
     term.resizeTerm();
