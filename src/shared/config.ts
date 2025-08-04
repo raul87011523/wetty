@@ -69,7 +69,7 @@ function parseLogLevel(
  */
 
 async function getThemeNames() {
-  const themesDir = path.join(__dirname, 'client/xte/themes');
+  const themesDir = path.join(THEME_DIR);
   fs.readdir(THEME_DIR, (err, files) => {
     if (err) {
       return [];
@@ -88,10 +88,6 @@ async function getThemeNames() {
  */
 async function loadTheme(filename) {
   try {
-    // Validate that the file is a JSON file (security)
-    if (!filename.endsWith('.json')) {
-      return {};
-    }
     const filePath = path.join(THEME_DIR, filename);
     const raw = fs.readFileSync(filePath, 'utf-8');
     return JSON.parse(raw);
