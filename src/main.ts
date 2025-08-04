@@ -130,7 +130,11 @@ if (!opts.help) {
       start(conf.ssh, conf.server, conf.command, conf.forceSSH, conf.ssl, conf.themes);
     })
     .catch((err: Error) => {
-      logger().error('error in server', { err });
+      logger().error('error in server', {
+        message: err?.message,
+        stack: err?.stack,
+        err
+      });
       process.exitCode = 1;
     });
 } else {
