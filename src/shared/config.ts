@@ -13,6 +13,12 @@ import type { Config, SSH, Server, SSL } from './interfaces';
 import type winston from 'winston';
 import type { Arguments } from 'yargs';
 
+import { fileURLToPath } from 'url';
+
+// Get the absolute path to the current file and directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const THEME_DIR = path.join(__dirname, 'themes');
 
 type confValue =
@@ -69,7 +75,6 @@ function parseLogLevel(
  */
 
 async function getThemeNames() {
-  const themesDir = path.join(THEME_DIR);
   fs.readdir(THEME_DIR, (err, files) => {
     if (err) {
       return [];
