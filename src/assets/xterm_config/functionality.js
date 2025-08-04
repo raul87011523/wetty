@@ -4,23 +4,22 @@ function optionGenericGet() {
 function optionGenericSet(value) {
   this.el.querySelector('input').value = value;
 }
-function optionEnumCreate(value) {
+function optionEnumGet() {
+  return this.el.querySelector('select').value;
+}
+function optionEnumSet(value) {
+  this.el.querySelector('select').value = value;
+}
+function optionEnumCreate(values) {
   const select = this.el.querySelector('select');
   if (select.options.length === 0) {
-    for (const item of getThemes()) {
+    for (const value of values) {
       const option = document.createElement('option');
       option.value = value;
       option.text = value;
       select.appendChild(option);
     }
   }
-}
-function optionEnumGet() {
-  return this.el.querySelector('select').value;
-}
-function optionEnumSet(value) {
-  optionEnumCreate.call(this, value);
-  this.el.querySelector('select').value = value;
 }
 function optionBoolGet() {
   return this.el.querySelector('input').checked;
@@ -80,6 +79,7 @@ function inflateOptions(optionsSchema) {
         }
         option.get = optionEnumGet.bind(option);
         option.set = optionEnumSet.bind(option);
+	option.create = optionEnumCreate.bin(option);
         break;
 
       case 'text':
@@ -137,7 +137,11 @@ function getThemes(){
 window.loadOptions = config => {
   allOptions.forEach(option => {
     if (option.name === 'Theme') {
-      option.enum = getThemes();
+      const themes = getThemes();
+      if (themes.length) {
+        option.enum = themes;
+	option.create(themes);
+      }
     }
     let value = getItem(config, option.path);
     if (option.nullable === true && option.type === 'text' && value == null)
