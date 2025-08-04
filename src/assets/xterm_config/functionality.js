@@ -10,6 +10,17 @@ function optionEnumGet() {
 function optionEnumSet(value) {
   this.el.querySelector('select').value = value;
 }
+function optionEnumCreate(values) {
+  const select = this.el.querySelector('select');
+  if (select.options.length === 0) {
+    for (const value of values) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.text = value;
+      select.appendChild(option);
+    }
+  }
+}
 function optionBoolGet() {
   return this.el.querySelector('input').checked;
 }
@@ -63,8 +74,12 @@ function inflateOptions(optionsSchema) {
           optionEl.value = varriant;
           el.querySelector('select').appendChild(optionEl);
         });
+        if (option.path[2] == 'theme'){
+          el.querySelector('select').dataset.isTheme = 'true';
+        }
         option.get = optionEnumGet.bind(option);
         option.set = optionEnumSet.bind(option);
+        option.create = optionEnumCreate.bind(option);
         break;
 
       case 'text':
@@ -114,8 +129,20 @@ function setItem(json, path, item) {
   }
 }
 
+function getThemes(){
+  const themes = window.wetty_get_themes?.() || {};
+  return Object.keys(themes); 
+}
+
 window.loadOptions = config => {
   allOptions.forEach(option => {
+    if (option.name === 'Theme') {
+      const themes = getThemes();
+      if (themes.length) {
+        option.enum = themes;
+	option.create(themes);
+      }
+    }
     let value = getItem(config, option.path);
     if (option.nullable === true && option.type === 'text' && value == null)
       value = null;
@@ -139,7 +166,7 @@ if (window.top === window)
     'Error: Page is top level. This page is supposed to be accessed from inside WeTTY.',
   );
 
-function saveConfig() {
+function saveConfig(ev) {
   const newConfig = {};
   allOptions.forEach(option => {
     let newValue = option.get();
@@ -153,6 +180,13 @@ function saveConfig() {
       newValue = JSON.parse(newValue);
     setItem(newConfig, option.path, newValue);
   });
+  if (ev.target.dataset.isTheme === 'true') {
+    const name = ev.target.value;
+    const themes = window.wetty_get_themes?.() || {};
+    if (themes[name]) {
+      newConfig.xterm.theme = themes[name];
+    }
+  }
   window.wetty_save_config(newConfig);
 }
 

@@ -9,6 +9,7 @@ import { getCommand } from './server/command.js';
 import { gcMetrics } from './server/metrics.js';
 import { server } from './server/socketServer.js';
 import { spawn } from './server/spawn.js';
+import { loadThemes } from './shared/config.js';
 import {
   sshDefault,
   serverDefault,
@@ -76,6 +77,8 @@ export async function decorateServerWithSsh(
     wettyConnections.inc();
 
     try {
+      const themes = await loadThemes();
+      socket.emit('themes', themes);
       const args = await getCommand(socket, ssh, command, forcessh);
       logger.debug('Command Generated', { cmd: args.join(' ') });
       await spawn(socket, args);

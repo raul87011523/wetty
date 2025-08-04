@@ -28,6 +28,9 @@ export function configureTerm(term: Term): void {
     editor.contentWindow!.wetty_save_config = (newConfig: Options) => {
       onInput(term, newConfig);
     };
+    editor.contentWindow!.wetty_get_themes = () => {
+      return term.themes;
+    };
     /* eslint-enable @typescript-eslint/no-non-null-assertion */
   }
   if (

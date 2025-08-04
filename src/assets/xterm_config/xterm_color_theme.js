@@ -15,7 +15,14 @@ const selectionColorOpacityOption = {
   max: 1,
 };
 
-window.inflateOptions([
+const options = [
+  {
+    type: 'enum',
+    name: 'Theme',
+    description: 'The theme for the terminal.',
+    path: ['xterm', 'theme', 'theme'],
+    enum: [],
+  },
   {
     type: 'color',
     name: 'Foreground Color',
@@ -132,8 +139,10 @@ window.inflateOptions([
     name: 'Bright White',
     description: 'Color for ANSI Bright White text.',
     path: ['xterm', 'theme', 'brightWhite'],
-  },
-]);
+    },
+];
+
+window.inflateOptions(options);
 
 selectionColorOption.get = function getInput() {
   return (

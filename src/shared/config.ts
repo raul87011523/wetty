@@ -13,6 +13,14 @@ import type { Config, SSH, Server, SSL } from './interfaces';
 import type winston from 'winston';
 import type { Arguments } from 'yargs';
 
+import { fileURLToPath } from 'url';
+
+// Get the absolute path to the current file and directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const THEME_DIR = path.join(__dirname, 'themes');
+
 type confValue =
   | boolean
   | string
@@ -59,6 +67,50 @@ function parseLogLevel(
   ].includes(logLevel)
     ? (logLevel as typeof winston.level)
     : defaultLogLevel;
+}
+
+/**
+ * [EN] Returns an array with the names of all JSON files in the 'theme' directory.
+ * [ES] Devuelve un array con los nombres de todos los archivos JSON en el directorio 'theme'.
+ */
+
+async function getThemeNames() {
+  try {
+    const files = await fs.readdir(THEME_DIR);
+    const names = files
+      .filter(file => file.endsWith('.json'))
+      .map(file => file.replace(/\.json$/, ''));
+    return names;
+  } catch (err) {
+    return [];
+  }
+}
+
+/**
+ * [EN] Given a filename, loads and parses its JSON content from the 'theme' directory.
+ * [ES] Dado un nombre de archivo, carga y parsea su contenido JSON desde el directorio 'theme'.
+ * @param {string} filename - The name of the JSON file (e.g., 'reader.json')
+ */
+async function loadTheme(filename) {
+  try {
+    const filePath = path.join(THEME_DIR, filename);
+    const raw = await fs.readFile(filePath, 'utf-8');
+    return JSON.parse(raw);
+  } catch (error) {
+    return {};
+  }
+}
+
+export async function loadThemes() {
+  const themes = {};
+  const themeNames = await getThemeNames();	
+  for (const name of themeNames) {
+    const theme = await loadTheme(`${name}.json`);
+    if (Object.keys(theme).length > 0) {
+      themes[name] = theme;
+    }
+  }
+  return themes
 }
 
 /**
