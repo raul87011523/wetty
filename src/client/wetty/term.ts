@@ -356,7 +356,6 @@ export function terminal(socket: Socket): Term | undefined {
     term.resizeTerm();
   };
   window.wetty_term = term;
-  window.wetty_themes = term.themes;
   window.toggleFunctions = toggleFunctions;
   window.toggleCTRL = toggleCTRL;
   window.toggleALT = toggleALT;
