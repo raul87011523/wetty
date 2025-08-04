@@ -14,7 +14,6 @@ export class Term extends Terminal {
   socket: Socket;
   fitAddon: FitAddon;
   loadOptions: () => Options;
-  wetty_themes: {};
 
   constructor(socket: Socket) {
     super({ allowProposedApi: true });
@@ -30,7 +29,7 @@ export class Term extends Terminal {
     const options = document.querySelector('#options .toggler');
     keyboard.style.color = foreground;
     options.style.color = foreground;
-    this.wetty_themes = socket.themes;
+    this.themes = socket.themes;
   }
 
   resizeTerm(): void {
@@ -309,9 +308,9 @@ const toggleFunctions = (): void => {
 declare global {
   interface Window {
     wetty_term?: Term;
+    wetty_themes?: Record<string, object>;
     wetty_close_config?: () => void;
     wetty_save_config?: (newConfig: Options) => void;
-    wetty_themes?: {};
     clipboardData: DataTransfer;
     loadOptions: (conf: Options) => void;
     toggleFunctions?: () => void;
@@ -355,6 +354,7 @@ export function terminal(socket: Socket): Term | undefined {
     term.resizeTerm();
   };
   window.wetty_term = term;
+  window.wetty_themes = term.themes;
   window.toggleFunctions = toggleFunctions;
   window.toggleCTRL = toggleCTRL;
   window.toggleALT = toggleALT;
