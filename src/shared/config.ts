@@ -121,7 +121,6 @@ export async function loadThemes() {
  * @returns variable cast to boolean
  */
 export async function loadConfigFile(filepath?: string): Promise<Config> {
-  const themes = await loadThemes();
   if (isUndefined(filepath)) {
     return {
       ssh: sshDefault,
@@ -129,7 +128,6 @@ export async function loadConfigFile(filepath?: string): Promise<Config> {
       command: defaultCommand,
       forceSSH: forceSSHDefault,
       logLevel: defaultLogLevel,
-      themes: themes,
     };
   }
   const content = await fs.readFile(path.resolve(filepath));
@@ -147,7 +145,6 @@ export async function loadConfigFile(filepath?: string): Promise<Config> {
       : ensureBoolean(parsed.forceSSH),
     ssl: parsed.ssl,
     logLevel: parseLogLevel(defaultLogLevel, parsed.logLevel),
-    themes: themes,
   };
 }
 
