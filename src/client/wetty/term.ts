@@ -144,24 +144,24 @@ document.addEventListener('keyup', (e) => {
   if (ctrlFlag) {
     // if key is a character
     if (e.key.length === 1 && e.key.match(/^[a-zA-Z0-9]$/)) {
-      simulateCTRLAndKey(e.key);
       // delayed backspace is needed to remove the character added to the terminal
       // when CTRL + key is pressed.
       // this is a workaround because e.preventDefault() cannot be used.
       _.debounce(() => {
         simulateBackspace();
+        simulateCTRLAndKey(e.key);
       }, 100)();
     }
     toggleCTRL();
   }
   if (altFlag) {
     if (e.key.length === 1 && e.key.match(/^[a-zA-Z0-9]$/)) {
-      simulateALTAndKey(e.key);
       // delayed backspace is needed to remove the character added to the terminal
       // when ALT + key is pressed.
       // this is a workaround because e.preventDefault() cannot be used.
       _.debounce(() => {
         simulateBackspace();
+        simulateALTAndKey(e.key);
       }, 100)();
     }
     simulateALTAndKey(e.key);
