@@ -60,9 +60,9 @@ const toggleCTRL = (): void => {
   if (ctrlButton) {
     if (ctrlFlag) {
       ctrlButton.classList.add('active');
-      /*if (altFlag) {
+      if (altFlag) {
         toggleALT();
-      }*/
+      }
     } else {
       ctrlButton.classList.remove('active');
     }
@@ -109,9 +109,9 @@ const toggleALT = (): void => {
   if (altButton) {
     if (altFlag) {
       altButton.classList.add('active');
-      /*if (ctrlFlag) {
+      if (ctrlFlag) {
         toggleCTRL();
-      }*/
+      }
     } else {
       altButton.classList.remove('active');
     }
@@ -144,12 +144,12 @@ document.addEventListener('keyup', (e) => {
   if (ctrlFlag) {
     // if key is a character
     if (e.key.length === 1 && e.key.match(/^[a-zA-Z0-9]$/)) {
-      simulateCTRLAndKey(e.key);
       // delayed backspace is needed to remove the character added to the terminal
       // when CTRL + key is pressed.
       // this is a workaround because e.preventDefault() cannot be used.
       _.debounce(() => {
         simulateBackspace();
+        simulateCTRLAndKey(e.key);
       }, 100)();
     }
     toggleCTRL();
