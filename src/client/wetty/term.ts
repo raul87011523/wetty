@@ -156,12 +156,12 @@ document.addEventListener('keyup', (e) => {
   }
   if (altFlag) {
     if (e.key.length === 1 && e.key.match(/^[a-zA-Z0-9]$/)) {
-      simulateALTAndKey(e.key);
       // delayed backspace is needed to remove the character added to the terminal
       // when ALT + key is pressed.
       // this is a workaround because e.preventDefault() cannot be used.
       _.debounce(() => {
         simulateBackspace();
+        simulateALTAndKey(e.key);
       }, 100)();
     }
     simulateALTAndKey(e.key);
