@@ -60,9 +60,9 @@ const toggleCTRL = (): void => {
   if (ctrlButton) {
     if (ctrlFlag) {
       ctrlButton.classList.add('active');
-      if (altFlag) {
+      /*if (altFlag) {
         toggleALT();
-      }
+      }*/
     } else {
       ctrlButton.classList.remove('active');
     }
@@ -109,9 +109,9 @@ const toggleALT = (): void => {
   if (altButton) {
     if (altFlag) {
       altButton.classList.add('active');
-      if (ctrlFlag) {
+      /*if (ctrlFlag) {
         toggleCTRL();
-      }
+      }*/
     } else {
       altButton.classList.remove('active');
     }
