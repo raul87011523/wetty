@@ -12,7 +12,8 @@ services:
     volumes:
       #- ./share:/home/testuser # is used only for testing
       - ./themes:/usr/src/app/build/shared/themes
-    command: --base / --allow-iframe
+    # command: --base / --allow-iframe
+    command: --base / --ssh-host tmate-server --ssh-port 2200 --allow-iframe
     networks:
       - local
     restart: unless-stopped
