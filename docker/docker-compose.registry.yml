@@ -1,0 +1,87 @@
+# Voice terminal stack, pulled from the local registry instead of built here.
+#
+# Use this on a machine that should just run the stack. The images are already
+# built, so there is no compiler, no CUDA toolchain and no repository needed:
+#
+#   docker compose -f docker/docker-compose.registry.yml up -d
+#
+# Two things still live outside the images, on purpose:
+#
+#   * The TLS certificate. Baking the private key into an image that anyone
+#     with registry access can pull would be a poor trade, and the SAN carries
+#     one specific IP anyway, so it would not travel. Create it with the
+#     command in VOICE-HANDOFF.md 6.2.
+#   * The models. They are unmodified upstream files, so there is nothing of
+#     ours to preserve and keeping them out saves ~2.4 GB in the registry.
+#     Fetch them once, see VOICE-HANDOFF.md 6.3 and the ollama pull below.
+services:
+  wetty:
+    image: ${REGISTRY:-192.168.1.8:5000}/wetty:voice
+    container_name: wetty-voice
+    ports:
+      - '${WETTY_PORT:-3000}:3000'
+    volumes:
+      - ./themes:/usr/src/app/build/shared/themes
+      # Microphone access needs a secure context, so wetty terminates TLS itself.
+      - ${HOME}/.ssl:/ssl:ro
+    command: >
+      --base /
+      --ssh-host ${TMATE_HOST:-192.168.1.8}
+      --ssh-port ${TMATE_PORT:-2200}
+      --ssl-key /ssl/wetty.key
+      --ssl-cert /ssl/wetty.crt
+      --stt-url http://whisper:8080
+      --llm-url http://ollama:11434
+      --llm-model ${LLM_MODEL:-qwen2.5-coder:3b}
+    depends_on:
+      - whisper
+      - ollama
+    restart: unless-stopped
+
+  whisper:
+    # Built for CUDA arch sm_61 (Pascal). The upstream ggml-org image is
+    # compiled for 750/800/860/900 and aborts on the first kernel launch with
+    # "no kernel image is available for execution on the device".
+    image: ${REGISTRY:-192.168.1.8:5000}/whisper:pascal
+    container_name: wetty-whisper
+    entrypoint: ['/app/build/bin/whisper-server']
+    command: >
+      --host 0.0.0.0
+      --port 8080
+      --model /models/ggml-${WHISPER_MODEL:-small}.bin
+      --language ${WHISPER_LANG:-es}
+      --threads ${WHISPER_THREADS:-8}
+    volumes:
+      - whisper-models:/models
+    # Required: the build links against libcuda.so.1, which only exists inside
+    # the container when the driver is mounted in.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  ollama:
+    image: ${REGISTRY:-192.168.1.8:5000}/ollama:voice
+    container_name: wetty-ollama
+    environment:
+      # Free the VRAM between dictations instead of holding the model for
+      # five minutes, whisper needs the same card.
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-30s}
+    volumes:
+      - ollama-models:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  whisper-models:
+  ollama-models:

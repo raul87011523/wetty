@@ -52,7 +52,8 @@ TerminalWriter text   -> xterm.js        term.paste(text)   (sin Enter, nunca)
 | `docker/Dockerfile.local` | Build desde el working copy (`COPY`) en vez de `git clone` |
 | `src/shared/hotkey.ts` | Gramática, parser y matcher de atajos. Puro, lo comparten servidor y cliente |
 | `docker/Dockerfile.whisper-pascal` | whisper.cpp compilado para `sm_61` (Pascal), CUDA 12.6 |
-| `docker/docker-compose.voice.yml` | wetty + whisper + ollama |
+| `docker/docker-compose.voice.yml` | wetty + whisper + ollama, construyendo aquí |
+| `docker/docker-compose.registry.yml` | el mismo stack tirando de las imágenes del registry |
 
 ### Ficheros modificados
 
@@ -355,6 +356,56 @@ más de 1 GB libre, y la transcripción sigue en 0,89 s con el LLM residente.
 Whisper ocupa 837 MiB con `ggml-small`. `qwen2.5-coder:3b` entra con holgura; el
 `7b` en Q4 (~4,7 GB) no cabe ni estando solo, de ahí el `3b` por defecto y
 `OLLAMA_KEEP_ALIVE=30s`.
+
+## 6.6 Imágenes publicadas en el registry del Pi5
+
+Las tres imágenes están en `http://192.168.1.8:5000` (Registry v2, **HTTP
+plano**, sin autenticación), así que no hay que reconstruirlas:
+
+```
+192.168.1.8:5000/wetty:voice       código del commit ca21291
+192.168.1.8:5000/whisper:pascal    nuestra build para sm_61, la cara de rehacer
+192.168.1.8:5000/ollama:voice      espejo de la oficial, sin modificar
+```
+
+Para levantar el stack desde ellas, sin repo ni compilador:
+
+```bash
+docker compose -f docker/docker-compose.registry.yml up -d
+```
+
+**Requisito en el cliente Docker**: al ser HTTP plano hay que declararlo como
+inseguro o el demonio lo rechaza con
+`http: server gave HTTP response to HTTPS client`. En Docker Desktop va en
+*Settings → Docker Engine*:
+
+```json
+{ "insecure-registries": ["192.168.1.8:5000"] }
+```
+
+Si no quieres reiniciar Docker, `crane` empuja sin pasar por el demonio:
+`docker run --rm -v /tmp:/data gcr.io/go-containerregistry/crane push --insecure /data/img.tar <destino>`.
+
+### Qué NO va dentro de las imágenes, y por qué
+
+- **El certificado TLS.** La clave privada acabaría en una imagen que cualquiera
+  con acceso al registry puede descargar, y el SAN lleva una IP concreta, así
+  que tampoco serviría en otra máquina. Se monta desde `~/.ssl`, o se regenera
+  con el §6.2.
+- **Los modelos.** Están sin modificar —el `ggml-small.bin` mide exactamente los
+  487.601.967 bytes del publicado en HuggingFace, y el de Ollama es el
+  `qwen2.5-coder:3b` oficial (`f72c60cabf62`)— así que no hay nada propio que
+  preservar y mantenerlos fuera ahorra ~2,4 GB. Se recuperan con el §6.3 y con
+  `ollama pull`.
+
+### Una trampa si alguna vez piensas en `docker commit`
+
+No sirve para este stack: **omite el contenido de las rutas montadas**, y
+`/models` y `/root/.ollama` son volúmenes. Commitear los contenedores en marcha
+daría imágenes con los modelos **vacíos**, más temporales de ejecución, y sin
+ser reproducibles desde el repo.
+
+---
 
 ## 7. Desarrollo sin Docker
 
