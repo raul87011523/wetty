@@ -1,0 +1,52 @@
+// Spoken form -> written form, applied before the LLM pass.
+//
+// Deterministic and instant, and it keeps working with ollama stopped.
+// Matching is case insensitive and tolerant of extra whitespace, and longer
+// phrases win over shorter ones, so `product template` beats `product`.
+//
+// Edit and restart wetty to pick up changes.
+{
+  // Odoo models
+  'res partner': 'res.partner',
+  'res users': 'res.users',
+  'res company': 'res.company',
+  'sale order': 'sale.order',
+  'sale order line': 'sale.order.line',
+  'purchase order': 'purchase.order',
+  'account move': 'account.move',
+  'account move line': 'account.move.line',
+  'stock picking': 'stock.picking',
+  'stock move': 'stock.move',
+  'stock quant': 'stock.quant',
+  'pos order': 'pos.order',
+  'pos session': 'pos.session',
+  'product template': 'product.template',
+  'product product': 'product.product',
+  'ir model': 'ir.model',
+  'ir cron': 'ir.cron',
+  'mail thread': 'mail.thread',
+
+  // Odoo field names and types
+  'company type': 'company_type',
+  'partner id': 'partner_id',
+  'product id': 'product_id',
+  'user id': 'user_id',
+  'many to many': 'Many2many',
+  'many to one': 'Many2one',
+  'one to many': 'One2many',
+  'campo char': 'fields.Char',
+  'campo many to one': 'fields.Many2one',
+
+  // Shell, git and docker
+  'git status': 'git status',
+  'git diff': 'git diff',
+  'docker compose': 'docker compose',
+  'punto py': '.py',
+  'punto xml': '.xml',
+  'guion bajo': '_',
+  'barra invertida': '\\',
+
+  // Spoken Spanish that should end up as identifiers
+  'odoo remote': 'OdooRemote',
+  'pos multi seller': 'pos_multi_seller',
+}

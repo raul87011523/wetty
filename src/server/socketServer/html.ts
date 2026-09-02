@@ -1,11 +1,52 @@
 import { isDev } from '../../shared/env.js';
+import type { Voice } from '../../shared/interfaces.js';
 import type { Request, Response, RequestHandler } from 'express';
 
 const jsFiles = isDev ? ['dev.js', 'wetty.js'] : ['wetty.js'];
 
+/**
+ * Voice toolbar markup, rendered only when the feature is enabled.
+ * Follows the `#functions` convention: static markup here, handlers exposed
+ * on `window` by the client bundle.
+ *
+ * @param voice - voice configuration
+ * @returns html fragment, empty when voice is disabled
+ */
+const voiceBar = (voice: Voice): string =>
+  !voice.enabled
+    ? ''
+    : `<div id="voice" data-hotkey="${voice.hotkey}">
+      <a class="toggler"
+         href="#"
+         alt="Toggle voice"
+         onclick="window.voiceToggle(); return false;"
+       ><i class="fas fa-microphone"></i></a>
+      <div class="voice-panel">
+        <div class="voice-status" id="voice-status"></div>
+        <textarea id="voice-buffer"
+                  rows="3"
+                  spellcheck="false"
+                  autocapitalize="none"
+                  autocomplete="off"
+                  placeholder="Dicta o escribe aqui, revisa, y luego envia"></textarea>
+        <div class="voice-actions">
+          <a href="#" id="voice-dictate" onclick="window.voiceDictate(); return false;">
+            <div><span class="voice-icon">&#127908;</span> Dictar</div>
+          </a>
+          <a href="#" id="voice-correct" onclick="window.voiceCorrect(); return false;">
+            <div><span class="voice-icon">&#10024;</span> Corregir</div>
+          </a>
+          <a href="#" id="voice-send" onclick="window.voiceSend(); return false;">
+            <div><span class="voice-icon">&#9000;</span> Enviar</div>
+          </a>
+        </div>
+      </div>
+    </div>`;
+
 const render = (
   title: string,
   base: string,
+  voice: Voice,
 ): string => `<!doctype html>
 <html lang="en">
   <head>
@@ -140,6 +181,7 @@ const render = (
         </a>
       </div>
     </div>
+    ${voiceBar(voice)}
     <div id="terminal"></div>
     ${jsFiles
         .map(file => `    <script type="module" src="${base}/client/${file}"></script>`)
@@ -148,7 +190,11 @@ const render = (
   </body>
 </html>`;
 
-export const html = (base: string, title: string): RequestHandler => (
+export const html = (
+  base: string,
+  title: string,
+  voice: Voice,
+): RequestHandler => (
   _req: Request,
   res: Response,
 ): void => {
@@ -156,6 +202,7 @@ export const html = (base: string, title: string): RequestHandler => (
     render(
       title,
       base,
+      voice,
     ),
   );
 };

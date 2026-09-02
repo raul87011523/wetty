@@ -33,9 +33,26 @@ export interface Server {
   allowIframe: boolean;
 }
 
+export type CorrectorMode = 'dictionary' | 'llm' | 'both';
+export type VoiceHotkey = 'double-ctrl' | 'none';
+
+export interface Voice {
+  [s: string]: string | number | boolean;
+  enabled: boolean;
+  hotkey: VoiceHotkey;
+  sttUrl: string;
+  sttTimeout: number;
+  correctorMode: CorrectorMode;
+  llmUrl: string;
+  llmModel: string;
+  llmTimeout: number;
+  dictionaryPath: string;
+}
+
 export interface Config {
   ssh: SSH;
   server: Server;
+  voice: Voice;
   forceSSH: boolean;
   command: string;
   logLevel: typeof winston.level;

@@ -326,6 +326,10 @@ declare global {
     pressENTER?: () => void;
     pressLEFT?: () => void;
     pressRIGHT?: () => void;
+    voiceToggle?: () => void;
+    voiceDictate?: () => void;
+    voiceCorrect?: () => void;
+    voiceSend?: () => void;
   }
 }
 

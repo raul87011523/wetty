@@ -13,6 +13,15 @@
 
 ![WeTTY](./docs/terminal.png?raw=true)
 
+## 🎤 Voice Terminal
+
+This fork adds voice dictation: speak, review the transcript, then type it into the
+terminal. Send never presses Enter, so nothing runs until you decide it does.
+
+- **[Manual de usuario](./docs/voice-terminal.md)** — configuración y uso
+- **[Estado y continuación](./VOICE-HANDOFF.md)** — qué está probado, qué falta, y las
+  trampas del repo
+
 Terminal over HTTP and https. WeTTY is an alternative to ajaxterm and anyterm
 but much better than them because WeTTY uses xterm.js which is a full fledged
 implementation of terminal emulation written entirely in JavaScript. WeTTY uses

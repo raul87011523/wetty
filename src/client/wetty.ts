@@ -1,5 +1,9 @@
 import { dom, library } from '@fortawesome/fontawesome-svg-core';
-import { faCogs, faKeyboard } from '@fortawesome/free-solid-svg-icons';
+import {
+  faCogs,
+  faKeyboard,
+  faMicrophone,
+} from '@fortawesome/free-solid-svg-icons';
 import _ from 'lodash';
 
 import '../assets/scss/styles.scss';
@@ -12,10 +16,12 @@ import { FlowControlClient } from './wetty/flowcontrol';
 import { mobileKeyboard } from './wetty/mobile';
 import { socket } from './wetty/socket';
 import { terminal, Term } from './wetty/term';
+import { voiceToolbar } from './wetty/voice/index';
 
 // Setup for fontawesome
 library.add(faCogs);
 library.add(faKeyboard);
+library.add(faMicrophone);
 dom.watch();
 
 function onResize(term: Term): () => void {
@@ -35,6 +41,7 @@ socket.on('connect', () => {
   term.resizeTerm();
   term.focus();
   mobileKeyboard();
+  voiceToolbar();
   const fileDownloader = new FileDownloader();
   const fcClient = new FlowControlClient();
 

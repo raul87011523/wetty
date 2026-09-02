@@ -1,0 +1,84 @@
+# Voice terminal stack: wetty + speech to text + text correction.
+#
+# Requires the NVIDIA Container Toolkit inside the WSL2 distro:
+#   nvidia-ctk runtime configure --runtime=docker && systemctl restart docker
+#   docker run --rm --gpus all ubuntu nvidia-smi
+#
+# Run from the repository root:
+#   docker compose -f docker/docker-compose.voice.yml up --build
+#   docker compose -f docker/docker-compose.voice.yml exec ollama ollama pull qwen2.5-coder:3b
+version: '3.8'
+
+services:
+  wetty:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.local
+    container_name: wetty-voice
+    image: wetty:voice
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./themes:/usr/src/app/build/shared/themes
+      # Microphone access needs a secure context, so wetty terminates TLS itself.
+      - ${HOME}/.ssl:/ssl:ro
+    command: >
+      --base /
+      --ssh-host ${TMATE_HOST:-tmate-server}
+      --ssh-port ${TMATE_PORT:-2200}
+      --ssl-key /ssl/wetty.key
+      --ssl-cert /ssl/wetty.crt
+      --stt-url http://whisper:8080
+      --llm-url http://ollama:11434
+      --llm-model ${LLM_MODEL:-qwen2.5-coder:3b}
+    depends_on:
+      - whisper
+      - ollama
+    restart: unless-stopped
+
+  whisper:
+    # NOTE: confirm this tag on the ROG before the first run, the CUDA image
+    # name changes between whisper.cpp releases. Any server exposing
+    # POST /inference and returning {"text": "..."} works here.
+    image: ghcr.io/ggml-org/whisper.cpp:main-cuda
+    container_name: wetty-whisper
+    entrypoint: ['/app/build/bin/whisper-server']
+    command: >
+      --host 0.0.0.0
+      --port 8080
+      --model /models/ggml-${WHISPER_MODEL:-small}.bin
+      --language ${WHISPER_LANG:-es}
+    volumes:
+      # Put ggml-small.bin here, see whisper.cpp models/download-ggml-model.sh
+      - whisper-models:/models
+    # No published port: only wetty talks to it, over the compose network.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama
+    container_name: wetty-ollama
+    environment:
+      # Free the VRAM between dictations instead of holding the model for
+      # five minutes, whisper needs the same card.
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-30s}
+    volumes:
+      - ollama-models:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  whisper-models:
+  ollama-models:

@@ -17,6 +17,16 @@
     bypassHelmet: false,                               // Disable Helmet security checks
   },
 
+  voice: {
+    enabled:        true,                            // Voice toolbar: dictate, review, correct, then type. Never executes.
+    hotkey:         'double-ctrl',                   // 'double-ctrl' toggles dictation, 'none' leaves only the button
+    sttUrl:         'http://whisper:8080',           // whisper.cpp server, receives the recorded audio
+    correctorMode:  'both',                          // 'dictionary', 'llm' or 'both'
+    llmUrl:         'http://ollama:11434',           // ollama server used to polish the transcript
+    llmModel:       'qwen2.5-coder:3b',              // model to correct with, keep it small to leave VRAM for whisper
+    dictionaryPath: 'conf/voice-dictionary.json5',   // technical term replacements, relative to the package root
+  },
+
   forceSSH: false,  // Force sshing to local machine over login if running as root
   command: 'login', // Command to run on server. Login will use ssh if connecting to different server
   /*

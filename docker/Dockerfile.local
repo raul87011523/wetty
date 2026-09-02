@@ -1,0 +1,28 @@
+# Build wetty from the working copy instead of cloning from GitHub, so a change
+# can be tested without pushing it first. Dockerfile.dev stays as it is for the
+# registry deployment.
+#
+# Build context is the repository root:
+#   docker compose -f docker/docker-compose.voice.yml build
+FROM node:20-bullseye
+
+WORKDIR /usr/src/app
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g pnpm
+
+# Dependencies first so editing sources does not reinstall them.
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install
+
+COPY . .
+RUN pnpm build
+
+EXPOSE 3000
+
+ENTRYPOINT ["node", "build/main.js"]

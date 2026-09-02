@@ -1,6 +1,8 @@
 import compression from 'compression';
 import winston from 'express-winston';
+import { voiceDefault } from '../shared/defaults.js';
 import { logger } from '../shared/logger.js';
+import { voiceRoutes } from './socketServer/api/voice.js';
 import { serveStatic, trim } from './socketServer/assets.js';
 import { html } from './socketServer/html.js';
 import { metricMiddleware, metricRoute } from './socketServer/metrics.js';
@@ -8,7 +10,8 @@ import { favicon, redirect } from './socketServer/middleware.js';
 import { policies } from './socketServer/security.js';
 import { listen } from './socketServer/socket.js';
 import { loadSSL } from './socketServer/ssl.js';
-import type { SSL, SSLBuffer, Server } from '../shared/interfaces.js';
+import { loadDictionary } from './voice/dictionary.js';
+import type { SSL, SSLBuffer, Server, Voice } from '../shared/interfaces.js';
 import type { Express } from 'express';
 import type SocketIO from 'socket.io';
 
@@ -16,6 +19,7 @@ export async function server(
   app: Express,
   { base, port, host, title, allowIframe }: Server,
   ssl?: SSL,
+  voice: Voice = voiceDefault,
 ): Promise<SocketIO.Server> {
   const basePath = trim(base);
   logger().info('Starting server', {
@@ -25,7 +29,9 @@ export async function server(
     title,
   });
 
-  const client = html(basePath, title);
+  if (voice.enabled) await loadDictionary(voice.dictionaryPath);
+
+  const client = html(basePath, title, voice);
   app
     .disable('x-powered-by')
     .use(metricMiddleware(basePath))
@@ -41,7 +47,12 @@ export async function server(
     .use(compression())
     .use(await favicon(basePath))
     .use(redirect)
-    .use(policies(allowIframe))
+    .use(policies(allowIframe));
+
+  // `--base /` trims to an empty string, which `use` does not accept as a mount path.
+  if (voice.enabled) app.use(basePath || '/', voiceRoutes(voice));
+
+  app
     .get(basePath, client)
     .get(`${basePath}/ssh/:user`, client);
 

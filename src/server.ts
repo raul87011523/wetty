@@ -13,11 +13,12 @@ import { loadThemes } from './shared/config.js';
 import {
   sshDefault,
   serverDefault,
+  voiceDefault,
   forceSSHDefault,
   defaultCommand,
 } from './shared/defaults.js';
 import { logger as getLogger } from './shared/logger.js';
-import type { SSH, SSL, Server } from './shared/interfaces.js';
+import type { SSH, SSL, Server, Voice } from './shared/interfaces.js';
 import type { Express } from 'express';
 import type SocketIO from 'socket.io';
 
@@ -40,8 +41,17 @@ export const start = (
   command: string = defaultCommand,
   forcessh: boolean = forceSSHDefault,
   ssl: SSL | undefined = undefined,
+  voice: Voice = voiceDefault,
 ): Promise<SocketIO.Server> =>
-  decorateServerWithSsh(express(), ssh, serverConf, command, forcessh, ssl);
+  decorateServerWithSsh(
+    express(),
+    ssh,
+    serverConf,
+    command,
+    forcessh,
+    ssl,
+    voice,
+  );
 
 export async function decorateServerWithSsh(
   app: Express,
@@ -50,6 +60,7 @@ export async function decorateServerWithSsh(
   command: string = defaultCommand,
   forcessh: boolean = forceSSHDefault,
   ssl: SSL | undefined = undefined,
+  voice: Voice = voiceDefault,
 ): Promise<SocketIO.Server> {
   const logger = getLogger();
   if (ssh.key) {
@@ -63,7 +74,7 @@ export async function decorateServerWithSsh(
   collectDefaultMetrics();
   gc().on('stats', gcMetrics);
 
-  const io = await server(app, serverConf, ssl);
+  const io = await server(app, serverConf, ssl, voice);
   /**
    * Wetty server connected too
    * @fires WeTTy#connnection

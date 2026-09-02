@@ -114,6 +114,34 @@ const opts = yargs(hideBin(process.argv))
     description: 'set log level of wetty server',
     type: 'string',
   })
+  .option('voice', {
+    description: 'enable the voice toolbar, use --no-voice to disable',
+    type: 'boolean',
+  })
+  .option('voice-hotkey', {
+    description: 'shortcut that toggles dictation: double-ctrl or none',
+    type: 'string',
+  })
+  .option('stt-url', {
+    description: 'base url of the speech to text service (whisper.cpp server)',
+    type: 'string',
+  })
+  .option('corrector-mode', {
+    description: 'text correction strategy: dictionary, llm or both',
+    type: 'string',
+  })
+  .option('llm-url', {
+    description: 'base url of the ollama server used to correct transcripts',
+    type: 'string',
+  })
+  .option('llm-model', {
+    description: 'ollama model used to correct transcripts',
+    type: 'string',
+  })
+  .option('voice-dictionary', {
+    description: 'path to a JSON5 file of technical term replacements',
+    type: 'string',
+  })
   .option('help', {
     alias: 'h',
     type: 'boolean',
@@ -127,7 +155,14 @@ if (!opts.help) {
     .then((config) => mergeCliConf(opts, config))
     .then((conf) => {
       setLevel(conf.logLevel);
-      start(conf.ssh, conf.server, conf.command, conf.forceSSH, conf.ssl);
+      start(
+        conf.ssh,
+        conf.server,
+        conf.command,
+        conf.forceSSH,
+        conf.ssl,
+        conf.voice,
+      );
     })
     .catch((err: Error) => {
       logger().error('error in server', {

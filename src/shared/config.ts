@@ -5,11 +5,12 @@ import isUndefined from 'lodash/isUndefined.js';
 import {
   sshDefault,
   serverDefault,
+  voiceDefault,
   forceSSHDefault,
   defaultCommand,
   defaultLogLevel,
 } from './defaults.js';
-import type { Config, SSH, Server, SSL } from './interfaces';
+import type { Config, SSH, Server, SSL, Voice } from './interfaces';
 import type winston from 'winston';
 import type { Arguments } from 'yargs';
 
@@ -125,6 +126,7 @@ export async function loadConfigFile(filepath?: string): Promise<Config> {
     return {
       ssh: sshDefault,
       server: serverDefault,
+      voice: voiceDefault,
       command: defaultCommand,
       forceSSH: forceSSHDefault,
       logLevel: defaultLogLevel,
@@ -139,6 +141,9 @@ export async function loadConfigFile(filepath?: string): Promise<Config> {
     server: isUndefined(parsed.server)
       ? serverDefault
       : Object.assign(serverDefault, parsed.server),
+    voice: isUndefined(parsed.voice)
+      ? voiceDefault
+      : Object.assign(voiceDefault, parsed.voice),
     command: isUndefined(parsed.command) ? defaultCommand : `${parsed.command}`,
     forceSSH: isUndefined(parsed.forceSSH)
       ? forceSSHDefault
@@ -157,15 +162,15 @@ export async function loadConfigFile(filepath?: string): Promise<Config> {
  *
  */
 const objectAssign = (
-  target: SSH | Server,
+  target: SSH | Server | Voice,
   source: Record<string, confValue>,
-): SSH | Server =>
+): SSH | Server | Voice =>
   Object.fromEntries(
     Object.entries(source).map(([key, value]) => [
       key,
       isUndefined(source[key]) ? target[key] : value,
     ]),
-  ) as SSH | Server;
+  ) as SSH | Server | Voice;
 
 /**
  * Merge cli arguemens with config object
@@ -201,6 +206,19 @@ export function mergeCliConf(opts: Arguments, config: Config): Config {
       title: opts.title,
       allowIframe: opts['allow-iframe'],
     }) as Server,
+    // objectAssign only keeps the keys listed here, so every field of Voice
+    // must appear. The timeouts have no cli flag and are carried over as is.
+    voice: objectAssign(config.voice, {
+      enabled: isUndefined(opts.voice) ? undefined : ensureBoolean(opts.voice),
+      hotkey: opts['voice-hotkey'],
+      sttUrl: opts['stt-url'],
+      sttTimeout: config.voice.sttTimeout,
+      correctorMode: opts['corrector-mode'],
+      llmUrl: opts['llm-url'],
+      llmModel: opts['llm-model'],
+      llmTimeout: config.voice.llmTimeout,
+      dictionaryPath: opts['voice-dictionary'],
+    }) as Voice,
     command: isUndefined(opts.command) ? config.command : `${opts.command}`,
     forceSSH: isUndefined(opts['force-ssh'])
       ? config.forceSSH

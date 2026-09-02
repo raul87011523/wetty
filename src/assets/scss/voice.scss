@@ -1,0 +1,96 @@
+@use './variables';
+
+// Fixed like #functions, so the toolbar costs the terminal no layout space
+// and the fit addon never needs to recompute because of it.
+#voice {
+  bottom: 0;
+  left: 0;
+  position: fixed;
+  right: 0;
+  z-index: 21;
+
+  .toggler {
+    bottom: 0.6em;
+    color: variables.$lgrey;
+    display: inline-block;
+    font-size: 20px;
+    padding: 10px;
+    position: absolute;
+    right: 1em;
+    text-decoration: none;
+  }
+
+  .voice-panel {
+    background-color: variables.$grey;
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    display: none;
+    padding: 0.6em 4em 0.6em 0.8em;
+  }
+
+  &.active .voice-panel {
+    display: block;
+  }
+
+  .voice-status {
+    color: variables.$lgrey;
+    font-family: monospace;
+    font-size: 12px;
+    padding-bottom: 0.35em;
+
+    &.error {
+      color: #ff8a80;
+    }
+  }
+
+  textarea {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 0.3em;
+    box-sizing: border-box;
+    color: variables.$white;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 0.4em;
+    resize: vertical;
+    width: 100%;
+  }
+
+  .voice-actions {
+    display: flex;
+    gap: 0.5em;
+    padding-top: 0.5em;
+
+    > a {
+      color: variables.$white;
+      flex: 1;
+      text-decoration: none;
+
+      > div {
+        border-radius: 10px;
+        font-weight: bold;
+        outline: 2px solid variables.$white;
+        padding: 8px 5px;
+        text-align: center;
+      }
+
+      &:active > div {
+        background-color: rgba(255, 255, 255, 0.25);
+      }
+
+      // Guard the stages: no correcting or sending while audio is in flight.
+      &.disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
+      &.recording > div {
+        background-color: rgba(255, 82, 82, 0.55);
+        outline-color: #ff5252;
+      }
+    }
+  }
+
+  .voice-icon {
+    padding-right: 0.2em;
+  }
+}
