@@ -11,6 +11,8 @@ body {
   font-family: monospace;
   font-size: 1rem;
   color: white;
+  /* One character of breathing room, the labels sat flush against the edge. */
+  padding-left: 1ch;
 }
 .templ {
   display: none;
@@ -75,4 +77,10 @@ header button {
   content: 'UNBOUND OPTION ';
   color: red;
   font-weight: bold;
+}
+
+.error_reporting.invalid {
+  color: #ef2929;
+  font-size: 0.85em;
+  padding: 0 0 0.6em 0.2em;
 }

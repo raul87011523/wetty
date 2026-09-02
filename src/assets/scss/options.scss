@@ -9,11 +9,14 @@
   z-index: 20;
 
   .toggler {
+    @include variables.floating-toggler(2em);
+
     color: variables.$lgrey;
-    display: inline-block;
     font-size: 16px;
+    // Anchored left: the container is only 16px wide, so anchoring the wider
+    // chip to its right edge pushed it off the screen.
+    left: 0;
     position: absolute;
-    right: 1em;
     top: 0;
     z-index: 20;
   }
@@ -48,15 +51,19 @@
 }
 
 #functions {
+  left: 1.5em;
   position: fixed;
   top: 5em;
   z-index: 20;
 
-  > a {
-    padding: 10px;
-    position: absolute;
-    top: -40px;
+  > a.toggler {
+    @include variables.floating-toggler(2em);
+
     color: variables.$lgrey;
+    font-size: 16px;
+    position: absolute;
+    // Clear of the gear above, which is now a 2em chip instead of a bare glyph.
+    top: -26px;
   }
 
   .onscreen-buttons {

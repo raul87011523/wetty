@@ -41,7 +41,7 @@ TerminalWriter text   -> xterm.js        term.paste(text)   (sin Enter, nunca)
 | `src/client/wetty/voice/index.ts` | Orquestador: las tres etapas, expone `window.voice*`, ancla la barra al viewport |
 | `src/client/wetty/voice/recorder.ts` | `getUserMedia` + `MediaRecorder`, y codifica **WAV 16 kHz mono en el navegador** |
 | `src/client/wetty/voice/buffer.ts` | Máquina de estados y DOM de la barra |
-| `src/client/wetty/voice/hotkey.ts` | Doble toque de Ctrl |
+| `src/client/wetty/voice/hotkey.ts` | Registra los cuatro atajos: acordes y doble toque de Ctrl |
 | `src/client/wetty/voice/api.ts` | `fetch` a los endpoints, resolviendo el base path |
 | `src/server/voice/stt.ts` | Proxy al whisper-server (`POST /inference`) |
 | `src/server/voice/correct.ts` | Diccionario, luego Ollama, con fallback al diccionario |
@@ -50,6 +50,7 @@ TerminalWriter text   -> xterm.js        term.paste(text)   (sin Enter, nunca)
 | `src/assets/scss/voice.scss` | Estilos, `position: fixed` como `#functions` |
 | `conf/voice-dictionary.json5` | 36 entradas Odoo/Python/git editables sin recompilar |
 | `docker/Dockerfile.local` | Build desde el working copy (`COPY`) en vez de `git clone` |
+| `src/shared/hotkey.ts` | Gramática, parser y matcher de atajos. Puro, lo comparten servidor y cliente |
 | `docker/Dockerfile.whisper-pascal` | whisper.cpp compilado para `sm_61` (Pascal), CUDA 12.6 |
 | `docker/docker-compose.voice.yml` | wetty + whisper + ollama |
 
@@ -130,6 +131,63 @@ verdad, y la barra con el teclado virtual físico de un móvil.
 
 ---
 
+## 3.bis Atajos de teclado (2026-09-02)
+
+Las cuatro acciones de la barra tienen atajo configurable
+(`hotkeyToggle`/`hotkeyDictate`/`hotkeyCorrect`/`hotkeySend`). Campos **planos**,
+no anidados: `Voice` tiene index signature y `loadConfigFile` hace merge shallow,
+así que un objeto anidado dejaría en `undefined` los atajos no configurados.
+
+**La elección de teclas se midió, no se dedujo**, espiando `term.onData` contra
+el stack real:
+
+| Combinación | Byte al shell |
+|---|---|
+| `ctrl+shift+<letra>`, `ctrl+shift+space` | **nada** |
+| `alt+shift+<letra>` | `ESC`+letra (en vim sale del modo inserción) |
+| `ctrl+shift+enter` | `0x0d` CR — **ejecutaría el comando** |
+| `ctrl+shift+-` | `0x1f` |
+| `ctrl+shift+2` | NUL |
+| `ctrl+shift+6` | nada (al contrario de lo que se suponía) |
+
+De ahí la familia `Ctrl+Shift` pese a perder las iniciales mnemotécnicas: no se
+fuga nada al shell ni aunque el manejador no llegue a montarse. Las tres últimas
+están en la lista de rechazadas del validador.
+
+**Configurables desde la interfaz** (engranaje -> *Voice Shortcuts*), no sólo
+desde el fichero. El editor es `src/assets/xterm_config/`, un sistema declarativo
+(`inflateOptions`) con opciones por `path`; la sección de voz vive en
+`wetty_voice_options.js`. La validación **no se reimplementa ahí**: el padre le
+inyecta `wetty_validate_hotkey` al iframe, igual que ya hacía con
+`wetty_get_themes`, así que la gramática sigue estando sólo en `shared/hotkey.ts`.
+El valor efectivo es el de `localStorage` si parsea, y si no el del servidor.
+
+Trampa del editor que costó un rato: **el primer evento `input` sólo engancha
+`saveConfig` a los controles** (`functionality.js` lo hace desde un listener de
+`window`), así que hace falta un segundo evento para que guarde de verdad. Con
+una persona tecleando es invisible; automatizándolo, no.
+
+Detalles que conviene no perder:
+
+- El matcher usa **`event.code`, no `event.key`**, y compara los modificadores de
+  forma **exacta**. Eso es lo que impide que AltGr (que en Windows activa `ctrl`
+  y `alt` a la vez) dispare un binding `alt+…`.
+- Se consume con `preventDefault()` **y** `stopPropagation()`. El segundo es el
+  que hace el trabajo: xterm escucha en su propio textarea y no consulta
+  `defaultPrevented`, así que parar el evento en captura sobre `document` es lo
+  que lo mantiene lejos del shell.
+- El guard mira `#onscreen-ctrl` **y** `#onscreen-alt` armados. Lo segundo es
+  necesario por el bug de §4.10.
+- Validación **en el servidor al arrancar**: un valor inválido avisa y cae al
+  default, nunca tumba el proceso ni muere en silencio en el navegador.
+- `voice.hotkey` sigue aceptándose como alias obsoleto de `hotkeyDictate`.
+
+**Sin tests automáticos**: se verificó ejecutándolo (los cuatro acordes disparan
+su acción y no mandan un solo byte; `Ctrl+D` sigue dando `0x04` y `Ctrl+C`
+`0x03`). Quedan pendientes los specs de mocha del parser.
+
+---
+
 ## 4. Trampas del repo (esto ya costó tiempo)
 
 1. **`objectAssign` en `src/shared/config.ts` descarta claves.** Itera sobre
@@ -180,7 +238,13 @@ verdad, y la barra con el teclado virtual físico de un móvil.
    los SONAME** y el binario muere con
    `libwhisper.so.1: cannot open shared object file`. De ahí el `ldconfig -n`
    en la etapa de runtime.
-9. **`node_modules` no está instalado en `wetty2`.** Para verificar usé temporalmente el
+9. **`term.ts:167`: `simulateALTAndKey(e.key)` está FUERA del `if`.** Con el Alt
+   del teclado en pantalla armado, cualquier tecla manda `ESC` + el nombre completo
+   de la tecla al shell (`\x1bArrowLeft`, `\x1bShift`), y las alfanuméricas se
+   mandan **dos veces**. Es corrupción hacia una shell, no cosmética. **No está
+   arreglado** (fuera de alcance), y por eso el guard de los atajos tiene que
+   mirar el Alt armado además del Ctrl.
+10. **`node_modules` no está instalado en `wetty2`.** Para verificar usé temporalmente el
    del clon `wetty/` con un symlink, y lo retiré. Necesitas `pnpm install` (la ruta Docker
    no lo necesita, `Dockerfile.local` instala dentro de la imagen).
 

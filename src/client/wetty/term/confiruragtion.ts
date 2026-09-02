@@ -1,3 +1,4 @@
+import { parseHotkey } from '../../../shared/hotkey.js';
 import { editor } from '../disconnect/elements';
 import { copySelected, copyShortcut } from './confiruragtion/clipboard';
 import { onInput } from './confiruragtion/editor';
@@ -30,6 +31,15 @@ export function configureTerm(term: Term): void {
     };
     editor.contentWindow!.wetty_get_themes = () => {
       return term.themes;
+    };
+    // The voice section validates as you type. The grammar lives in
+    // `shared/hotkey.ts`, so it is reached from here rather than reimplemented
+    // inside the configuration page.
+    editor.contentWindow!.wetty_validate_hotkey = (spec: string) => {
+      const parsed = parseHotkey(spec);
+      return parsed.kind === 'none' && parsed.reason !== undefined
+        ? { ok: false, reason: parsed.reason }
+        : { ok: true };
     };
     /* eslint-enable @typescript-eslint/no-non-null-assertion */
   }

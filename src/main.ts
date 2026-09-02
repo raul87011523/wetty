@@ -118,8 +118,25 @@ const opts = yargs(hideBin(process.argv))
     description: 'enable the voice toolbar, use --no-voice to disable',
     type: 'boolean',
   })
+  .option('voice-hotkey-toggle', {
+    description:
+      'shortcut that opens or closes the voice bar. A chord such as ctrl+shift+l, or double-ctrl, or none',
+    type: 'string',
+  })
+  .option('voice-hotkey-dictate', {
+    description: 'shortcut that starts or stops dictation',
+    type: 'string',
+  })
+  .option('voice-hotkey-correct', {
+    description: 'shortcut that corrects the text sitting in the buffer',
+    type: 'string',
+  })
+  .option('voice-hotkey-send', {
+    description: 'shortcut that types the buffer into the terminal',
+    type: 'string',
+  })
   .option('voice-hotkey', {
-    description: 'shortcut that toggles dictation: double-ctrl or none',
+    description: 'deprecated alias of --voice-hotkey-dictate',
     type: 'string',
   })
   .option('stt-url', {

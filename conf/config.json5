@@ -19,7 +19,14 @@
 
   voice: {
     enabled:        true,                            // Voice toolbar: dictate, review, correct, then type. Never executes.
-    hotkey:         'double-ctrl',                   // 'double-ctrl' toggles dictation, 'none' leaves only the button
+    // Shortcuts. A chord like 'ctrl+shift+f', or 'double-ctrl', or 'none'.
+    // Ctrl+Shift+<key> was measured to send nothing to the shell, unlike
+    // Alt+Shift, which leaks ESC+letter. Ctrl+Shift+Enter/-/2 are refused:
+    // the terminal reads them as CR, 0x1f and NUL.
+    hotkeyToggle:   'ctrl+shift+l',                  // open or close the bar
+    hotkeyDictate:  'ctrl+shift+space',              // start or stop dictation
+    hotkeyCorrect:  'ctrl+shift+f',                  // correct what is in the buffer
+    hotkeySend:     'ctrl+shift+x',                  // type it into the terminal
     sttUrl:         'http://whisper:8080',           // whisper.cpp server, receives the recorded audio
     correctorMode:  'both',                          // 'dictionary', 'llm' or 'both'
     llmUrl:         'http://ollama:11434',           // ollama server used to polish the transcript

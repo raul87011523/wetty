@@ -43,14 +43,15 @@ La barra vive abajo. Se abre con el icono del micrófono, a la derecha.
 
 ### Dictar
 
-Doble toque de **Ctrl** (o el botón `Dictar`) empieza a grabar. **Otro doble toque de
+**Ctrl+Shift+Space** (o el botón `Dictar`) empieza a grabar. **Otra pulsación de
 Ctrl para.** La misma acción inicia y termina: la grabación nunca se corta sola, así que
 nada se transcribe ni se envía sin que tú lo decidas.
 
 Al parar, el audio va al servicio de voz y el texto aparece en el cuadro. Ahí **puedes
 editarlo a mano**; es un `textarea` normal.
 
-> Ctrl a secas no envía nada a la shell, así que el atajo no interfiere con el tecleo.
+> `Ctrl+Shift+<tecla>` no envía nada a la shell, comprobado espiando `term.onData`,
+> así que el atajo no interfiere con el tecleo ni aunque su manejador fallara.
 > `Ctrl+C` dos veces seguidas **no** activa el dictado: si entre los dos toques se pulsa
 > cualquier otra tecla, la secuencia se descarta.
 
@@ -119,7 +120,10 @@ de línea de comandos.
 ```json5
 voice: {
   enabled:        true,
-  hotkey:         'double-ctrl',                 // o 'none'
+  hotkeyToggle:   'ctrl+shift+l',                // abrir/cerrar la barra
+  hotkeyDictate:  'ctrl+shift+space',            // dictar
+  hotkeyCorrect:  'ctrl+shift+f',                // corregir
+  hotkeySend:     'ctrl+shift+x',                // enviar
   sttUrl:         'http://whisper:8080',
   correctorMode:  'both',                        // 'dictionary' | 'llm' | 'both'
   llmUrl:         'http://ollama:11434',
@@ -128,12 +132,52 @@ voice: {
 }
 ```
 
+### Atajos de teclado
+
+Se cambian **desde la propia interfaz**: pulsa el engranaje y busca la sección
+**Voice Shortcuts**. Los cuatro campos validan mientras escribes y el cambio se
+aplica **al instante**, sin recargar; el atajo activo aparece entre paréntesis en
+los botones de la barra.
+
+Lo que configures ahí se guarda en el navegador (`localStorage`) y **manda sobre
+lo que traiga el servidor**, pero sólo si es válido: un atajo mal escrito vuelve
+al del servidor en vez de dejar la acción sin forma de invocarla. Deja un campo
+vacío para volver al valor del servidor.
+
+Cada acción acepta un acorde (`ctrl+shift+f`), el valor especial `double-ctrl`
+(doble toque de Ctrl) o `none` para desactivarla. No distingue mayúsculas ni el
+orden de los modificadores, y admite alias (`control`, `cmd`, `option`, `esc`,
+`return`). **Hace falta al menos un modificador**: una tecla suelta pertenece a
+la terminal.
+
+Las letras nombran **posiciones de un teclado US**, porque el emparejado usa
+`event.code`. Es lo que hace que el atajo no cambie al cambiar de distribución.
+
+Estas combinaciones se rechazan, y el motivo se midió contra la terminal real:
+
+| Combinación | Por qué |
+|---|---|
+| `ctrl+shift+enter` | La terminal la lee como Enter (`0x0d`): ejecutaría el comando |
+| `ctrl+shift+-` | La terminal la lee como `0x1f` |
+| `ctrl+shift+2` | La terminal la lee como NUL |
+| `ctrl+shift+c` | Ya es el atajo de copiar |
+
+Evita también lo que se queda el navegador (`ctrl+shift+` t, n, w, i, j, p…) y la
+familia `alt+shift`, que **sí se fuga** a la shell como `ESC`+letra: en vim eso
+sale del modo inserción.
+
+Un valor inválido no tumba el servidor: sale un aviso en el log y se usa el valor
+por defecto.
+
 ### Referencia
 
 | Opción | Flag | Variable | Por defecto |
 |---|---|---|---|
 | `enabled` | `--voice` / `--no-voice` | `VOICE_ENABLED` | `true` |
-| `hotkey` | `--voice-hotkey` | `VOICE_HOTKEY` | `double-ctrl` |
+| `hotkeyToggle` | `--voice-hotkey-toggle` | `VOICE_HOTKEY_TOGGLE` | `ctrl+shift+l` |
+| `hotkeyDictate` | `--voice-hotkey-dictate` | `VOICE_HOTKEY_DICTATE` | `ctrl+shift+space` |
+| `hotkeyCorrect` | `--voice-hotkey-correct` | `VOICE_HOTKEY_CORRECT` | `ctrl+shift+f` |
+| `hotkeySend` | `--voice-hotkey-send` | `VOICE_HOTKEY_SEND` | `ctrl+shift+x` |
 | `sttUrl` | `--stt-url` | `STT_URL` | `http://whisper:8080` |
 | `sttTimeout` | — | `STT_TIMEOUT` | `120000` |
 | `correctorMode` | `--corrector-mode` | `CORRECTOR_MODE` | `both` |
@@ -241,8 +285,11 @@ descargar (`ollama pull`) o falta de VRAM.
 Usa un modelo más pequeño (`--llm-model`) o sube `LLM_TIMEOUT`. whisper y Ollama comparten
 GPU: un modelo de 7B en 4 GB de VRAM hace *offload* parcial y se arrastra.
 
-**El doble Ctrl no hace nada.**
-Comprueba `hotkey: 'double-ctrl'`. Los dos toques tienen que ir seguidos (menos de 400 ms)
+**Un atajo no hace nada.**
+Mira el log del servidor al arrancar: un valor mal escrito sale como aviso y cae al
+valor por defecto. En el móvil los atajos **no funcionan por diseño** (no hay tecla
+física y el Ctrl del teclado en pantalla está excluido a propósito); usa los iconos.
+Si usas `double-ctrl`, los dos toques tienen que ir seguidos (menos de 400 ms)
 y sin pulsar ninguna otra tecla en medio. El botón `Dictar` hace exactamente lo mismo.
 
 **En el móvil la barra queda tapada por el teclado.**

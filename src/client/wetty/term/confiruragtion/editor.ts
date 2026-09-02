@@ -16,6 +16,9 @@ export const onInput = (term: Term, updated: Options) => {
     term.resizeTerm();
     editor.classList.remove('error');
     localStorage.options = updatedConf;
+    // Rebind straight away: making the user reload to pick up a new shortcut
+    // would be a poor way to discover you typed it wrong.
+    window.voiceApplyHotkeys?.();
   } catch (e) {
     console.error('Configuration Error', e); // eslint-disable-line no-console
     editor.classList.add('error');

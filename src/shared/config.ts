@@ -6,11 +6,27 @@ import {
   sshDefault,
   serverDefault,
   voiceDefault,
+  builtinHotkeys,
   forceSSHDefault,
   defaultCommand,
   defaultLogLevel,
 } from './defaults.js';
-import type { Config, SSH, Server, SSL, Voice } from './interfaces';
+import {
+  canonicalHotkey,
+  duplicateBindings,
+  parseBindings,
+  parseHotkey,
+} from './hotkey.js';
+import { logger } from './logger.js';
+import type { VoiceAction } from './hotkey.js';
+import type {
+  Config,
+  SSH,
+  Server,
+  SSL,
+  Voice,
+  VoiceFields,
+} from './interfaces';
 import type winston from 'winston';
 import type { Arguments } from 'yargs';
 
@@ -180,6 +196,103 @@ const objectAssign = (
  * @returns merged configuration
  *
  */
+/**
+ * Voice options coming from the cli.
+ *
+ * `objectAssign` only keeps the keys listed in the source object, so every
+ * field of `Voice` must appear here or the option vanishes without a word.
+ * Typing the literal as `Record<keyof VoiceFields, confValue>` turns a
+ * forgotten field into a compile error instead of a run time surprise. The
+ * timeouts have no flag and are carried over as they are.
+ *
+ * @param opts - parsed cli arguments
+ * @param config - configuration loaded from the file
+ * @returns the voice options to merge
+ */
+function voiceCliConf(
+  opts: Arguments,
+  config: Config,
+): Record<keyof VoiceFields, confValue> {
+  return {
+    enabled: isUndefined(opts.voice) ? undefined : ensureBoolean(opts.voice),
+    hotkeyToggle: opts['voice-hotkey-toggle'],
+    hotkeyDictate: opts['voice-hotkey-dictate'],
+    hotkeyCorrect: opts['voice-hotkey-correct'],
+    hotkeySend: opts['voice-hotkey-send'],
+    hotkey: opts['voice-hotkey'],
+    sttUrl: opts['stt-url'],
+    sttTimeout: config.voice.sttTimeout,
+    correctorMode: opts['corrector-mode'],
+    llmUrl: opts['llm-url'],
+    llmModel: opts['llm-model'],
+    llmTimeout: config.voice.llmTimeout,
+    dictionaryPath: opts['voice-dictionary'],
+  };
+}
+
+/**
+ * Validate and canonicalise the four shortcuts.
+ *
+ * A bad value falls back to the built in default with a warning rather than
+ * taking the server down, matching how `parseLogLevel` treats an unknown
+ * level. Silence is the thing to avoid here: an unparsed shortcut simply never
+ * fires, which is impossible to diagnose from the browser.
+ *
+ * @param voice - voice configuration
+ * @returns a copy with every shortcut canonical
+ */
+export function resolveVoiceHotkeys(voice: Voice): Voice {
+  const log = logger();
+  const resolved: Voice = { ...voice };
+
+  const legacy = `${voice.hotkey ?? ''}`.trim();
+  if (legacy !== '') {
+    log.warn(
+      'voice.hotkey is deprecated, use voice.hotkeyDictate instead',
+      { value: legacy },
+    );
+    resolved.hotkeyDictate = legacy;
+  }
+  resolved.hotkey = '';
+
+  const fields: [VoiceAction, keyof typeof builtinHotkeys][] = [
+    ['toggle', 'hotkeyToggle'],
+    ['dictate', 'hotkeyDictate'],
+    ['correct', 'hotkeyCorrect'],
+    ['send', 'hotkeySend'],
+  ];
+
+  fields.forEach(([, field]) => {
+    const parsed = parseHotkey(`${resolved[field]}`);
+    if (parsed.kind === 'none' && `${resolved[field]}`.trim() !== '') {
+      log.warn(`voice.${field} is not a usable shortcut, using the default`, {
+        value: resolved[field],
+        reason: parsed.reason,
+        fallback: builtinHotkeys[field],
+      });
+      resolved[field] = canonicalHotkey(parseHotkey(builtinHotkeys[field]));
+      return;
+    }
+    resolved[field] = canonicalHotkey(parsed);
+  });
+
+  duplicateBindings(
+    parseBindings({
+      toggle: `${resolved.hotkeyToggle}`,
+      dictate: `${resolved.hotkeyDictate}`,
+      correct: `${resolved.hotkeyCorrect}`,
+      send: `${resolved.hotkeySend}`,
+    }),
+  ).forEach((group) =>
+    log.warn('the same voice shortcut is bound to several actions', {
+      actions: group,
+      note: `only ${group[0]} will fire`,
+    }),
+  );
+
+  return resolved;
+}
+
 export function mergeCliConf(opts: Arguments, config: Config): Config {
   const ssl = {
     key: opts['ssl-key'],
@@ -206,19 +319,7 @@ export function mergeCliConf(opts: Arguments, config: Config): Config {
       title: opts.title,
       allowIframe: opts['allow-iframe'],
     }) as Server,
-    // objectAssign only keeps the keys listed here, so every field of Voice
-    // must appear. The timeouts have no cli flag and are carried over as is.
-    voice: objectAssign(config.voice, {
-      enabled: isUndefined(opts.voice) ? undefined : ensureBoolean(opts.voice),
-      hotkey: opts['voice-hotkey'],
-      sttUrl: opts['stt-url'],
-      sttTimeout: config.voice.sttTimeout,
-      correctorMode: opts['corrector-mode'],
-      llmUrl: opts['llm-url'],
-      llmModel: opts['llm-model'],
-      llmTimeout: config.voice.llmTimeout,
-      dictionaryPath: opts['voice-dictionary'],
-    }) as Voice,
+    voice: objectAssign(config.voice, voiceCliConf(opts, config)) as Voice,
     command: isUndefined(opts.command) ? config.command : `${opts.command}`,
     forceSSH: isUndefined(opts['force-ssh'])
       ? config.forceSSH

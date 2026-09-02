@@ -330,6 +330,8 @@ declare global {
     voiceDictate?: () => void;
     voiceCorrect?: () => void;
     voiceSend?: () => void;
+    voiceApplyHotkeys?: () => void;
+    wetty_validate_hotkey?: (spec: string) => { ok: boolean; reason?: string };
   }
 }
 

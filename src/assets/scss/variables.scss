@@ -2,3 +2,28 @@ $black: #000;
 $grey: rgba(0, 0, 0, 0.75);
 $white: #fff;
 $lgrey: #ccc;
+
+// The floating buttons sit straight on top of the terminal, so without a
+// surface of their own they get lost among the characters underneath.
+// A dark chip with a light rim reads against any output, light or dark.
+$toggler-bg: rgba(0, 0, 0, 0.72);
+$toggler-border: rgba(255, 255, 255, 0.45);
+
+@mixin floating-toggler($size: 2em) {
+  align-items: center;
+  background-color: $toggler-bg;
+  border: 1px solid $toggler-border;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+  box-sizing: border-box;
+  display: inline-flex;
+  height: $size;
+  justify-content: center;
+  width: $size;
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.85);
+    border-color: $white;
+    color: $white;
+  }
+}

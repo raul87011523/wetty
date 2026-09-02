@@ -1,5 +1,6 @@
 import compression from 'compression';
 import winston from 'express-winston';
+import { resolveVoiceHotkeys } from '../shared/config.js';
 import { voiceDefault } from '../shared/defaults.js';
 import { logger } from '../shared/logger.js';
 import { voiceRoutes } from './socketServer/api/voice.js';
@@ -29,9 +30,13 @@ export async function server(
     title,
   });
 
-  if (voice.enabled) await loadDictionary(voice.dictionaryPath);
+  // Validate here rather than in `mergeCliConf`: `start()` is exported, so an
+  // embedder can hand us a Voice that never went through the cli merge.
+  const voiceConf = voice.enabled ? resolveVoiceHotkeys(voice) : voice;
 
-  const client = html(basePath, title, voice);
+  if (voiceConf.enabled) await loadDictionary(voiceConf.dictionaryPath);
+
+  const client = html(basePath, title, voiceConf);
   app
     .disable('x-powered-by')
     .use(metricMiddleware(basePath))
@@ -50,7 +55,7 @@ export async function server(
     .use(policies(allowIframe));
 
   // `--base /` trims to an empty string, which `use` does not accept as a mount path.
-  if (voice.enabled) app.use(basePath || '/', voiceRoutes(voice));
+  if (voiceConf.enabled) app.use(basePath || '/', voiceRoutes(voiceConf));
 
   app
     .get(basePath, client)

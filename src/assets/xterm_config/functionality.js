@@ -41,6 +41,8 @@ function optionNumberSet(value) {
 }
 
 const allOptions = [];
+// Exposed so the voice section can find its own controls to validate them.
+window.wetty_all_options = allOptions;
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 function inflateOptions(optionsSchema) {

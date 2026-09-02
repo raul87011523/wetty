@@ -1,6 +1,9 @@
+import type { VoiceAction } from '../../../shared/hotkey.js';
 import { correct, transcribe } from './api.js';
 import { VoiceBuffer } from './buffer.js';
-import { registerDoubleCtrl } from './hotkey.js';
+import { canonicalHotkey, describeBinding, parseHotkey } from '../../../shared/hotkey.js';
+import { loadOptions } from '../term/load.js';
+import { registerHotkeys } from './hotkey.js';
 import { Recorder } from './recorder.js';
 
 /**
@@ -37,6 +40,28 @@ function followViewport(root: HTMLElement): void {
  * The three stages stay deliberately separate, and none of them presses
  * Enter: send only types the text into the terminal.
  */
+let disposeHotkeys: (() => void) | undefined;
+
+/**
+ * The shortcut to use for one action: what the user configured, when it is
+ * usable, otherwise what the server sent.
+ *
+ * @param configured - value from the configuration menu
+ * @param fromServer - value rendered into the toolbar markup
+ * @returns the shortcut to bind
+ */
+function pick(configured: string | undefined, fromServer = ''): string {
+  const trimmed = (configured ?? '').trim();
+  if (trimmed === '') return fromServer;
+  const parsed = parseHotkey(trimmed);
+  if (parsed.kind === 'none' && parsed.reason !== undefined) {
+    // eslint-disable-next-line no-console
+    console.warn(`voice: ignoring "${trimmed}", ${parsed.reason}`);
+    return fromServer;
+  }
+  return canonicalHotkey(parsed);
+}
+
 export function voiceToolbar(): void {
   const root = document.getElementById('voice');
   // `wetty.ts` runs this on every socket connect, including reconnects.
@@ -118,7 +143,16 @@ export function voiceToolbar(): void {
     term.focus();
   }
 
-  window.voiceToggle = (): void => buffer.toggle();
+  /**
+   * Open or close the bar. Closing hands the focus back to the terminal:
+   * otherwise it stays on `body` and whatever is typed next is lost.
+   */
+  function toggle(): void {
+    buffer.toggle();
+    if (!buffer.isOpen) window.wetty_term?.focus();
+  }
+
+  window.voiceToggle = toggle;
   window.voiceDictate = (): void => {
     dictate();
   };
@@ -127,11 +161,44 @@ export function voiceToolbar(): void {
   };
   window.voiceSend = send;
 
-  if (root.dataset.hotkey === 'double-ctrl') {
-    registerDoubleCtrl(() => {
-      dictate();
+  /**
+   * Bind the shortcuts and show them on the buttons.
+   *
+   * The configuration menu wins over what the server sent, but only when its
+   * value parses: a shortcut typed wrong falls back to the server one instead
+   * of leaving the action unreachable.
+   */
+  function applyHotkeys(bar: HTMLElement): void {
+    const stored = loadOptions().voice;
+    const specs: Record<VoiceAction, string> = {
+      toggle: pick(stored?.hotkeyToggle, bar.dataset.hotkeyToggle),
+      dictate: pick(stored?.hotkeyDictate, bar.dataset.hotkeyDictate),
+      correct: pick(stored?.hotkeyCorrect, bar.dataset.hotkeyCorrect),
+      send: pick(stored?.hotkeySend, bar.dataset.hotkeySend),
+    };
+
+    disposeHotkeys?.();
+    disposeHotkeys = registerHotkeys(specs, {
+      toggle: () => toggle(),
+      dictate: () => {
+        dictate();
+      },
+      correct: () => {
+        improve();
+      },
+      send,
+    });
+
+    bar.querySelectorAll('.voice-shortcut').forEach((label) => {
+      const action = (label as HTMLElement).dataset.action as VoiceAction;
+      const shortcut = describeBinding(parseHotkey(specs[action]));
+      // eslint-disable-next-line no-param-reassign
+      (label as HTMLElement).innerText = shortcut === '' ? '' : ` (${shortcut})`;
     });
   }
+
+  window.voiceApplyHotkeys = (): void => applyHotkeys(root);
+  applyHotkeys(root);
 
   followViewport(root);
 }

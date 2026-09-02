@@ -1,4 +1,5 @@
 import { isDev } from '../../shared/env.js';
+import { canonicalHotkey, parseHotkey } from '../../shared/hotkey.js';
 import type { Voice } from '../../shared/interfaces.js';
 import type { Request, Response, RequestHandler } from 'express';
 
@@ -12,10 +13,15 @@ const jsFiles = isDev ? ['dev.js', 'wetty.js'] : ['wetty.js'];
  * @param voice - voice configuration
  * @returns html fragment, empty when voice is disabled
  */
-const voiceBar = (voice: Voice): string =>
-  !voice.enabled
+const voiceBar = (voice: Voice): string => {
+  const bind = (field: string): string => parseHotkeyField(voice, field);
+  return !voice.enabled
     ? ''
-    : `<div id="voice" data-hotkey="${voice.hotkey}">
+    : `<div id="voice"
+      data-hotkey-toggle="${bind('hotkeyToggle')}"
+      data-hotkey-dictate="${bind('hotkeyDictate')}"
+      data-hotkey-correct="${bind('hotkeyCorrect')}"
+      data-hotkey-send="${bind('hotkeySend')}">
       <a class="toggler"
          href="#"
          alt="Toggle voice"
@@ -31,17 +37,33 @@ const voiceBar = (voice: Voice): string =>
                   placeholder="Dicta o escribe aqui, revisa, y luego envia"></textarea>
         <div class="voice-actions">
           <a href="#" id="voice-dictate" onclick="window.voiceDictate(); return false;">
-            <div><span class="voice-icon">&#127908;</span> Dictar</div>
+            <div><span class="voice-icon">&#127908;</span> Dictar<span class="voice-shortcut" data-action="dictate"></span></div>
           </a>
           <a href="#" id="voice-correct" onclick="window.voiceCorrect(); return false;">
-            <div><span class="voice-icon">&#10024;</span> Corregir</div>
+            <div><span class="voice-icon">&#10024;</span> Corregir<span class="voice-shortcut" data-action="correct"></span></div>
           </a>
           <a href="#" id="voice-send" onclick="window.voiceSend(); return false;">
-            <div><span class="voice-icon">&#9000;</span> Enviar</div>
+            <div><span class="voice-icon">&#9000;</span> Enviar<span class="voice-shortcut" data-action="send"></span></div>
           </a>
         </div>
       </div>
     </div>`;
+};
+
+/**
+ * Canonical form of one configured shortcut, safe to drop into an attribute.
+ *
+ * `canonicalHotkey` only ever emits `[a-z0-9+-]` and the punctuation tokens,
+ * so the value cannot break out of the quotes. That matters now that these
+ * strings are freely configurable rather than one of two literals.
+ *
+ * @param voice - voice configuration
+ * @param field - name of the hotkey field
+ * @returns the canonical shortcut
+ */
+function parseHotkeyField(voice: Voice, field: string): string {
+  return canonicalHotkey(parseHotkey(`${voice[field]}`));
+}
 
 const render = (
   title: string,

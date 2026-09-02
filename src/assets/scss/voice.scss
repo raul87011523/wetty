@@ -10,11 +10,11 @@
   z-index: 21;
 
   .toggler {
+    @include variables.floating-toggler(2.2em);
+
     bottom: 0.6em;
     color: variables.$lgrey;
-    display: inline-block;
     font-size: 20px;
-    padding: 10px;
     position: absolute;
     right: 1em;
     text-decoration: none;

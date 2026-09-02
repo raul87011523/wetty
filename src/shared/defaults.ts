@@ -22,9 +22,37 @@ export const serverDefault: Server = {
   allowIframe: process.env.ALLOWIFRAME === 'true' || false,
 };
 
+/**
+ * Shortcuts shipped with the toolbar, free of environment variables so that
+ * validation always has something to fall back to.
+ *
+ * All four were measured against a running xterm by watching `term.onData`:
+ * `ctrl+shift+<key>` sends nothing to the shell, so even a shortcut that never
+ * reaches its handler cannot type into the terminal. The mnemonic letters
+ * (v, d, c, e) are unusable here because Chrome and Firefox reserve them.
+ */
+export const builtinHotkeys = {
+  hotkeyToggle: 'ctrl+shift+l',
+  hotkeyDictate: 'ctrl+shift+space',
+  hotkeyCorrect: 'ctrl+shift+f',
+  hotkeySend: 'ctrl+shift+x',
+};
+
 export const voiceDefault: Voice = {
   enabled: process.env.VOICE_ENABLED !== 'false',
-  hotkey: (process.env.VOICE_HOTKEY as VoiceHotkey) || 'double-ctrl',
+  hotkeyToggle:
+    (process.env.VOICE_HOTKEY_TOGGLE as VoiceHotkey) ||
+    builtinHotkeys.hotkeyToggle,
+  hotkeyDictate:
+    (process.env.VOICE_HOTKEY_DICTATE as VoiceHotkey) ||
+    builtinHotkeys.hotkeyDictate,
+  hotkeyCorrect:
+    (process.env.VOICE_HOTKEY_CORRECT as VoiceHotkey) ||
+    builtinHotkeys.hotkeyCorrect,
+  hotkeySend:
+    (process.env.VOICE_HOTKEY_SEND as VoiceHotkey) || builtinHotkeys.hotkeySend,
+  // Deprecated: empty means unset, `resolveVoiceHotkeys` maps it onto dictate.
+  hotkey: (process.env.VOICE_HOTKEY as VoiceHotkey) || '',
   sttUrl: process.env.STT_URL || 'http://whisper:8080',
   sttTimeout: parseInt(process.env.STT_TIMEOUT || '120000', 10),
   correctorMode: (process.env.CORRECTOR_MODE as CorrectorMode) || 'both',
