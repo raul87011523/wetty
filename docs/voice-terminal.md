@@ -39,12 +39,14 @@ No hay ninguna ruta en la que la voz ejecute algo por su cuenta.
 
 ## Uso
 
-La barra vive abajo. Se abre con el icono del micrófono, a la derecha.
+La barra vive abajo. Se abre con el icono del micrófono, a la derecha, o con
+**Ctrl+Shift+L**. Los cuatro atajos se cambian desde el engranaje, sección
+**Voice Shortcuts**, y cada botón muestra entre paréntesis el suyo.
 
-### Dictar
+### Dictar — Ctrl+Shift+Space
 
-**Ctrl+Shift+Space** (o el botón `Dictar`) empieza a grabar. **Otra pulsación de
-Ctrl para.** La misma acción inicia y termina: la grabación nunca se corta sola, así que
+**Ctrl+Shift+Space** (o el botón `Dictar`) empieza a grabar. **Otra pulsación del mismo
+atajo para.** La misma acción inicia y termina: la grabación nunca se corta sola, así que
 nada se transcribe ni se envía sin que tú lo decidas.
 
 Al parar, el audio va al servicio de voz y el texto aparece en el cuadro. Ahí **puedes
@@ -52,12 +54,12 @@ editarlo a mano**; es un `textarea` normal.
 
 > `Ctrl+Shift+<tecla>` no envía nada a la shell, comprobado espiando `term.onData`,
 > así que el atajo no interfiere con el tecleo ni aunque su manejador fallara.
-> `Ctrl+C` dos veces seguidas **no** activa el dictado: si entre los dos toques se pulsa
-> cualquier otra tecla, la secuencia se descarta.
+> Si configuras `double-ctrl`, `Ctrl+C` dos veces seguidas **no** activa el dictado:
+> pulsar cualquier otra tecla entre los dos toques descarta la secuencia.
 
 Dictar otra vez **añade** al texto que ya haya, no lo reemplaza: puedes dictar por partes.
 
-### Corregir
+### Corregir — Ctrl+Shift+F
 
 Pasa el texto por dos capas:
 
@@ -78,7 +80,7 @@ Es opcional. Si la transcripción ya está bien, ve directo a Enviar.
 Si el modelo está caído o tarda demasiado, **Corregir no falla**: devuelve el resultado
 del diccionario. La capa 1 nunca depende de la 2.
 
-### Enviar
+### Enviar — Ctrl+Shift+X
 
 Escribe el texto en la terminal como si lo hubieras tecleado, **sin Enter**.
 
