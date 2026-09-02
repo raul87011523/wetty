@@ -1,0 +1,74 @@
+# whisper.cpp built for Pascal cards (compute capability 6.1).
+#
+# The upstream image ghcr.io/ggml-org/whisper.cpp:main-cuda is compiled for
+# CUDA archs 750/800/860/900 only, so on a GTX 1050 Ti it loads the model and
+# then aborts on the first kernel launch with
+#   ggml_cuda_compute_forward: IM2COL failed
+#   CUDA error: no kernel image is available for execution on the device
+#
+# Two things matter here:
+#   * CMAKE_CUDA_ARCHITECTURES=61 emits the kernels the card can actually run.
+#   * The toolkit must be CUDA 12.x. CUDA 13 dropped Pascal, so nvcc 13 cannot
+#     target sm_61 at all. A 12.x build runs fine on a newer driver.
+#   * ggml-cuda calls the CUDA *driver* API (cuGetErrorString, VMM) but does not
+#     link it here, so the build fails with "undefined reference to
+#     cuGetErrorString". The linker flags below point at the driver stub. Its
+#     SONAME is libcuda.so.1, so the result depends on the real driver that
+#     --gpus injects at run time, never on the stub.
+#
+# Build:
+#   docker compose -f docker/docker-compose.voice.yml build whisper
+FROM nvidia/cuda:12.6.3-devel-ubuntu22.04 AS build
+
+ARG WHISPER_REF=v1.9.3
+ARG CUDA_ARCH=61
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    cmake \
+    build-essential \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /src
+RUN git clone --depth 1 --branch ${WHISPER_REF} \
+    https://github.com/ggml-org/whisper.cpp.git .
+
+RUN cmake -B build \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DGGML_CUDA=ON \
+      -DCMAKE_CUDA_ARCHITECTURES=${CUDA_ARCH} \
+      -DWHISPER_BUILD_EXAMPLES=ON \
+      -DWHISPER_BUILD_TESTS=OFF \
+      -DBUILD_SHARED_LIBS=ON \
+      -DCMAKE_SHARED_LINKER_FLAGS="-L/usr/local/cuda/lib64/stubs -lcuda" \
+      -DCMAKE_EXE_LINKER_FLAGS="-L/usr/local/cuda/lib64/stubs -lcuda" \
+    && cmake --build build --config Release -j "$(nproc)" --target whisper-server \
+    && test -x build/bin/whisper-server
+
+# Collect the binary and every shared library it needs into one directory, so
+# the runtime stage does not depend on where cmake happened to put them.
+RUN mkdir -p /out \
+    && cp build/bin/whisper-server /out/ \
+    && find build -name '*.so*' -exec cp -a {} /out/ \; \
+    && ls -la /out
+
+FROM nvidia/cuda:12.6.3-runtime-ubuntu22.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+COPY --from=build /out/ /app/build/bin/
+
+# Recreate the SONAME symlinks (libwhisper.so.1 -> libwhisper.so.1.9.3 and the
+# ggml ones); without them the binary dies with "cannot open shared object file".
+RUN ldconfig -n /app/build/bin && ls -la /app/build/bin
+
+ENV LD_LIBRARY_PATH=/app/build/bin:${LD_LIBRARY_PATH}
+ENV PATH=/app/build/bin:${PATH}
+
+# Same entrypoint and contract as the upstream image, so the compose service
+# only needs its `image:` swapped for a `build:`.
+ENTRYPOINT ["/app/build/bin/whisper-server"]

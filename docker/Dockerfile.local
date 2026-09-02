@@ -14,7 +14,9 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g pnpm
+# node-pty 0.10.1 spawns the node-gyp binary from PATH, and pnpm does not
+# provide one the way npm does, so install it explicitly.
+RUN npm install -g pnpm node-gyp
 
 # Dependencies first so editing sources does not reinstall them.
 COPY package.json pnpm-lock.yaml ./

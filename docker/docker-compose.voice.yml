@@ -37,10 +37,17 @@ services:
     restart: unless-stopped
 
   whisper:
-    # NOTE: confirm this tag on the ROG before the first run, the CUDA image
-    # name changes between whisper.cpp releases. Any server exposing
-    # POST /inference and returning {"text": "..."} works here.
-    image: ghcr.io/ggml-org/whisper.cpp:main-cuda
+    # Built here instead of pulling ghcr.io/ggml-org/whisper.cpp:main-cuda: that
+    # image is compiled for CUDA archs 750/800/860/900 (Turing and newer) and on
+    # a Pascal card loads the model fine but aborts on the first kernel launch
+    # with "no kernel image is available for execution on the device".
+    # Dockerfile.whisper-pascal builds for sm_61. Measured on a GTX 1050 Ti with
+    # ggml-small: 1.5 s for 11 s of audio, against 5.0 s on CPU.
+    # Any server exposing POST /inference and returning {"text": "..."} works.
+    build:
+      context: .
+      dockerfile: Dockerfile.whisper-pascal
+    image: whisper:pascal
     container_name: wetty-whisper
     entrypoint: ['/app/build/bin/whisper-server']
     command: >
@@ -48,10 +55,13 @@ services:
       --port 8080
       --model /models/ggml-${WHISPER_MODEL:-small}.bin
       --language ${WHISPER_LANG:-es}
+      --threads ${WHISPER_THREADS:-8}
     volumes:
       # Put ggml-small.bin here, see whisper.cpp models/download-ggml-model.sh
       - whisper-models:/models
     # No published port: only wetty talks to it, over the compose network.
+    # Required: the build links against libcuda.so.1, which only exists inside
+    # the container when the driver is mounted in.
     deploy:
       resources:
         reservations:

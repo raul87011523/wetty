@@ -1,8 +1,10 @@
 # Voice Terminal — estado y continuación
 
-Documento de traspaso. Si abres una sesión nueva de Claude en la ASUS, **lee esto
-primero**: dice qué está hecho, qué está probado de verdad, qué no, y las trampas
-del repo que ya han costado tiempo una vez.
+Documento de traspaso. **Lee esto primero**: dice qué está hecho, qué está
+probado de verdad, qué no, y las trampas del repo que ya han costado tiempo.
+
+Actualizado el 2026-09-02 en la ASUS, tras poner el stack en marcha y cerrar los
+siete puntos que quedaban sin verificar.
 
 Manual de usuario: [`docs/voice-terminal.md`](docs/voice-terminal.md).
 Propuesta original: `~/Development/asd2/propuesta_wetty_voice_terminal.md` (en la otra laptop).
@@ -13,14 +15,12 @@ Propuesta original: `~/Development/asd2/propuesta_wetty_voice_terminal.md` (en l
 
 | | |
 |---|---|
-| Repo | `/home/raul/Development/wetty2` (laptop de origen) |
+| Repo | `/home/raul/projects/wetty2` (ASUS) — origen: `/home/raul/Development/wetty2` |
 | Rama | `feat/voice-terminal` |
 | Base | commit `6da8262` de `dev` |
 | Remoto | `https://github.com/raul87011523/wetty.git` |
 
-**El trabajo puede estar aún sin commitear en la laptop de origen.** Si en la ASUS
-no ves la rama, es que falta el traspaso: `git push -u origin feat/voice-terminal`
-desde la laptop de origen, y aquí `git fetch && git checkout feat/voice-terminal`.
+El traspaso ya está hecho: la rama está en la ASUS sobre el commit `9f81bfe`.
 
 ---
 
@@ -50,6 +50,7 @@ TerminalWriter text   -> xterm.js        term.paste(text)   (sin Enter, nunca)
 | `src/assets/scss/voice.scss` | Estilos, `position: fixed` como `#functions` |
 | `conf/voice-dictionary.json5` | 36 entradas Odoo/Python/git editables sin recompilar |
 | `docker/Dockerfile.local` | Build desde el working copy (`COPY`) en vez de `git clone` |
+| `docker/Dockerfile.whisper-pascal` | whisper.cpp compilado para `sm_61` (Pascal), CUDA 12.6 |
 | `docker/docker-compose.voice.yml` | wetty + whisper + ollama |
 
 ### Ficheros modificados
@@ -66,38 +67,66 @@ Fuera del repo: `~/Development/nginx/html/wetty.html` (https + `allow="microphon
 
 ## 3. Qué está probado y qué no
 
-### Verificado ejecutándolo
+### Verificado en la laptop de origen
 
-Arrancando `node build/main.js --base / --port 3001 …` en la laptop de origen:
+Arrancando `node build/main.js --base / --port 3001 …`:
 
 - Diccionario: `busca en res partner … company type` -> `res.partner … company_type`
 - Longest-match: `sale order line` -> `sale.order.line` (no `sale.order line`)
 - `/api/stt` con whisper caído -> **HTTP 503**; cuerpo vacío -> **HTTP 400**
-- Corrección con Ollama caído -> **HTTP 200 con el resultado del diccionario**, 72 ms
-- Corrección con Ollama real (CPU, qwen2.5-coder:7b) -> `Busca en res.partner los que
-  tengan company_type 'company'`, 4,9 s con el modelo ya cargado
+- Corrección con Ollama caído -> **HTTP 200 con el resultado del diccionario**
 - La barra aparece en el HTML con `data-hotkey="double-ctrl"`
 - `mocha`: 17 tests pasando. Lint y tipos limpios en los ficheros nuevos
 
-### NO verificado — esto es lo que hay que probar en la ASUS
+### Verificado en la ASUS (2026-09-02), stack completo en Docker
 
-1. **Micrófono y grabación.** Todo `recorder.ts` está sin ejecutar: `getUserMedia`,
-   `MediaRecorder`, y sobre todo la conversión a WAV 16 kHz
-   (`decodeAudioData` -> `OfflineAudioContext` -> cabecera WAV). Necesita HTTPS y un
-   navegador real. **Es el punto de mayor riesgo de todo el cambio.**
-2. **El doble toque de Ctrl.** Cuatro casos: que inicie y pare; que `Ctrl+C` dos veces
-   **no** lo dispare; que funcione con el foco en la terminal y en el `<textarea>`; y
-   que se ignore con el Ctrl del teclado en pantalla armado.
-3. **whisper.cpp.** Nunca se ha ejecutado. El tag `ghcr.io/ggml-org/whisper.cpp:main-cuda`
-   del compose **está sin confirmar** — verifícalo antes del primer `up`. Cualquier
-   servidor que exponga `POST /inference` y devuelva `{"text": "..."}` sirve igual.
-4. **GPU en Docker.** La laptop de origen no tiene driver NVIDIA, nada de la ruta CUDA
-   se ha podido probar.
-5. **El certificado.** Sigue siendo el viejo `CN=None` sin SAN, que Chrome rechaza.
-6. **Móvil.** Que la barra siga visible con el teclado virtual abierto (usa la
-   VisualViewport API) y que el arrastre no pelee con el scroll.
-7. **La prueba de seguridad**: meter un salto de línea en el buffer y confirmar que al
-   Enviar **no se ejecuta nada**.
+Los siete puntos que quedaban pendientes están cerrados. Todo lo de abajo se
+comprobó **ejecutándolo** contra `docker/docker-compose.voice.yml`, con Chrome
+headless dirigido por puppeteer dentro de la red del compose.
+
+1. **Micrófono y grabación — el WAV es correcto.** Fuente a 44100 Hz -> WAV
+   **16000 Hz mono 16-bit**: `RIFF`/`WAVE`, subchunks `fmt `/`data`, PCM,
+   byte rate 32000, block align 2, `RIFF size` = total-8, `data size` = total-44,
+   y duración 10,98 s frente a 11,00 s del original. Whisper transcribió habla
+   real desde ese WAV. La cadena `decodeAudioData` -> `OfflineAudioContext` ->
+   `encodeWav` se ejecutó de verdad.
+   **Lo único que sigue sin probarse es la línea `getUserMedia`**: en un
+   contenedor no hay micrófono y ningún flag de Chrome crea uno falso
+   (`enumerateDevices()` devuelve `[]`, `getUserMedia` da `NotFoundError`), así
+   que esa llamada se sustituyó por un `MediaStream` sintético de Web Audio.
+   Necesita un micro real para cerrarse del todo.
+2. **Doble toque de Ctrl — los 7 casos.** Inicia y para; con el foco en la
+   terminal y en el `<textarea>`; `Ctrl+C` dos veces no dispara; se ignora con
+   `#onscreen-ctrl` armado; dos toques a más de 400 ms no disparan; el Ctrl
+   mantenido (autorepeat) tampoco.
+3. **whisper.cpp — en GPU con imagen propia.** El tag
+   `ghcr.io/ggml-org/whisper.cpp:main-cuda` existe y su `entrypoint`
+   `/app/build/bin/whisper-server` es correcto, pero **no sirve para una
+   Pascal** (§4.8). Con `docker/Dockerfile.whisper-pascal`:
+   `CUDA : ARCHS = 610`, backend CUDA0, y **1,06 s de extremo a extremo por
+   `/api/stt`** para 11 s de audio, frente a 5,0 s del mismo modelo en CPU.
+4. **GPU en Docker.** Funciona sin instalar nada: ver §6.1. Whisper y Ollama
+   corren los dos en la tarjeta a la vez sin pelearse.
+5. **El certificado.** Regenerado con SAN. Ver §6.2.
+6. **Móvil.** En 390x844 la barra es `position: fixed`, `z-index: 21`, no
+   desborda el ancho. Simulando un teclado virtual de 336 px, `followViewport`
+   aplica `bottom: 336px` y el borde inferior de la barra queda exactamente en
+   el límite visible; al cerrarse vuelve a `0px`. Abierta mide 149 px de alto y
+   los tres botones son de 99x36.
+   **La otra mitad de este punto era falsa**: no hay ninguna lógica de arrastre
+   en el código (ni `pointerdown`, ni `touchstart`), así que no hay conflicto
+   posible con el scroll.
+7. **La prueba de seguridad — pasa end-to-end.** Con
+   `"lista los ficheros\nrm -rf /\r\nid"` en el buffer, lo que llega a
+   `term.paste` es `"lista los ficheros rm -rf / id"`.
+   Y el riesgo **no era hipotético**: whisper devuelve saltos de línea reales en
+   su salida (`"…para ti.\n Puedes preguntar…"`), así que la garantía depende
+   enteramente de `singleLine()`. Residuo menor: `U+0085` (NEL) no lo cubre `\s`
+   en JS y atraviesa la normalización intacto; no ejecuta nada, porque llega al
+   PTY como UTF-8 `0xC2 0x85` y no como `0x0A`.
+
+Sigue sin probarse, y necesita hardware real: dictado con un micrófono de
+verdad, y la barra con el teclado virtual físico de un móvil.
 
 ---
 
@@ -107,11 +136,12 @@ Arrancando `node build/main.js --base / --port 3001 …` en la laptop de origen:
    `Object.entries(source)`, así que **toda clave de la interfaz que no enumeres en
    `mergeCliConf` desaparece**. Así se perdió `llmTimeout` y la corrección caía siempre
    al diccionario. Si añades un campo a `Voice`, añádelo también ahí.
-2. **`core.autocrlf=true`**: el working tree está en **CRLF** y el repo guarda LF. Si
-   editas con Python/Node, abre con `newline=''` o convierte, o reescribirás el fichero
-   entero. La regla `linebreak-style` de eslint exige LF y por eso **falla en todos los
-   ficheros del repo**, no solo en los nuevos; para lintar de verdad usa
-   `--rule '{"linebreak-style":"off"}'`.
+2. **Finales de línea: depende de la máquina, compruébalo.** En la laptop de origen
+   `core.autocrlf=true` dejaba el working tree en **CRLF**. **En la ASUS no**:
+   `core.autocrlf` no está definido en ningún scope y el checkout es LF. Verifica con
+   `grep -c $'\r$' <fichero>` antes de editar, y si editas con Python/Node abre con
+   `newline=''` para no reescribir el fichero entero. La regla `linebreak-style` de
+   eslint exige LF; para lintar de verdad usa `--rule '{"linebreak-style":"off"}'`.
 3. **Errores de tipos preexistentes**: 40 en `src/client/wetty/term.ts`
    (`keepTerminalActive`, `_core`, nulls) y 2 en `src/shared/config.ts` (temas). **No son
    del cambio de voz.** El typechecker de `build.js` es un *warning*, no bloquea el build.
@@ -123,7 +153,34 @@ Arrancando `node build/main.js --base / --port 3001 …` en la laptop de origen:
    sin globbing: un módulo de cliente nuevo solo entra si se importa desde `wetty.ts`.
 6. **`voiceToolbar()` se llama en cada `socket.on('connect')`**, incluidas reconexiones;
    por eso es idempotente vía `root.dataset.mounted`.
-7. **`node_modules` no está instalado en `wetty2`.** Para verificar usé temporalmente el
+7. **El build de Docker falla sin `node-gyp`.** `node-pty@0.10.1` lanza el binario
+   `node-gyp` **por PATH** desde su `scripts/install.js`. `npm` lo trae incorporado,
+   pero el Dockerfile instala pnpm y usa `pnpm install`, y **pnpm no expone
+   `node-gyp`**. Sin él el build muere con `spawn node-gyp ENOENT`, que despista
+   porque parece un fallo de compilación. De ahí el `npm install -g pnpm node-gyp`
+   en `Dockerfile.local`. Las dependencias de compilación (`python3`, `make`,
+   `build-essential`) ya estaban bien.
+8. **La imagen `whisper.cpp:main-cuda` no sirve para una Pascal.** Está compilada
+   para archs `750/800/860/900` (Turing en adelante). En la GTX 1050 Ti (`6.1`)
+   **carga el modelo y reserva los buffers sin quejarse**, y aborta en la primera
+   inferencia:
+   `ggml_cuda_compute_forward: IM2COL failed` / `CUDA error: no kernel image is
+   available for execution on the device`. Que `ggml_cuda_init` encuentre la tarjeta
+   **no prueba nada**; el fallo sólo aparece al lanzar el primer kernel. Por eso
+   existe `docker/Dockerfile.whisper-pascal`, que compila con
+   `CMAKE_CUDA_ARCHITECTURES=61`. Y tiene que ser **CUDA 12.x**: CUDA 13 retiró
+   Pascal y su `nvcc` ya no sabe generar `sm_61`.
+   Ese Dockerfile tropezó dos veces, y las dos están resueltas dentro:
+   *(a)* `ggml-cuda` llama a la API **driver** (`cuGetErrorString`, VMM) pero no
+   la enlaza, así que el enlazado muere con `undefined reference`. Se arregla
+   apuntando a `/usr/local/cuda/lib64/stubs`; el stub tiene `SONAME
+   libcuda.so.1`, de modo que **no se empotra**: queda la dependencia que
+   satisface el driver real que inyecta `--gpus`.
+   *(b)* Recolectar las librerías con `find -type f` **descarta los symlinks de
+   los SONAME** y el binario muere con
+   `libwhisper.so.1: cannot open shared object file`. De ahí el `ldconfig -n`
+   en la etapa de runtime.
+9. **`node_modules` no está instalado en `wetty2`.** Para verificar usé temporalmente el
    del clon `wetty/` con un symlink, y lo retiré. Necesitas `pnpm install` (la ruta Docker
    no lo necesita, `Dockerfile.local` instala dentro de la imagen).
 
@@ -147,45 +204,57 @@ Arrancando `node build/main.js --base / --port 3001 …` en la laptop de origen:
   e instantánea y cubre el caso Odoo; la 2 solo pule. Si Ollama falla o expira se devuelve
   la capa 1 con HTTP 200, nunca un error.
 - **Enviar no ejecuta.** No hay ningún `'\x0A'` en la ruta de voz. El Enter lo pulsa la
-  persona.
+  persona. Y hace falta de verdad: whisper devuelve saltos de línea en su salida.
+- **Imagen propia de whisper en vez de la oficial.** La de upstream no arranca kernels
+  en Pascal. Como puente se usó `--no-gpu` en la misma imagen (funciona: 5,0 s por
+  `/api/stt` para 11 s de audio con `small` y 8 hilos), y luego se compiló para `sm_61`,
+  que baja a 1,06 s. El contrato no cambia: cualquier servidor con `POST /inference` que
+  devuelva `{"text": "..."}` sigue valiendo, así que volver a CPU es sólo añadir `-ng` al
+  `command` del servicio.
 
 ---
 
-## 6. Puesta en marcha en la ASUS
+## 6. Puesta en marcha (verificado en la ASUS, 2026-09-02)
 
-Asumo Windows + WSL2 con Docker nativo dentro de la distro (no Docker Desktop), como en
-la laptop de origen.
+El entorno real resultó distinto de lo que se asumía. Lo de abajo está
+comprobado en la máquina, no supuesto.
 
-### 6.1 GPU en contenedores (una sola vez)
+| | |
+|---|---|
+| GPU | **GTX 1050 Ti, 4096 MiB** (la suposición era correcta) |
+| Driver | 582.28 (Windows), CUDA 13.0, `/usr/lib/wsl/lib/libcuda.so.1` presente |
+| Docker | **Docker Desktop 4.88.1**, no Docker nativo en la distro |
+| IP de la LAN | `192.168.1.58` (Windows). WSL2 está tras NAT en `172.17.100.147` |
+| tmate | **`192.168.1.8:2200`** (Pi5), banner `SSH-2.0-tmate` |
 
-En WSL2 el driver no se instala en Linux: lo aporta Windows y aparece como
-`/usr/lib/wsl/lib/libcuda.so.1`. Para que los **contenedores** lo vean hace falta además
-el NVIDIA Container Toolkit dentro de la distro:
+### 6.1 GPU en contenedores: no hay nada que hacer
+
+Con Docker Desktop el demonio **no corre en esta distro**, así que
+`nvidia-ctk runtime configure` escribiría un `/etc/docker/daemon.json` que nadie
+lee. **No instales el NVIDIA Container Toolkit.** El runtime ya viene
+registrado; compruébalo así:
 
 ```bash
-nvidia-smi                      # debe responder dentro de WSL2
-# instalar nvidia-container-toolkit desde el repo de NVIDIA, luego:
-sudo nvidia-ctk runtime configure --runtime=docker
-sudo systemctl restart docker
-docker run --rm --gpus all ubuntu nvidia-smi    # comprobación
+docker info | grep Runtimes           # -> io.containerd.runc.v2 nvidia runc
+docker run --rm --gpus all ubuntu nvidia-smi
 ```
 
 ### 6.2 Certificado con SAN
 
-El actual (`~/.ssl/wetty.crt`) tiene `CN=None` y **sin SAN**; Chrome lo rechaza de
-entrada. Regénralo con la IP/hostname reales de la ASUS:
+`~/.ssl` no existía; se crea de cero. El compose monta `${HOME}/.ssl:/ssl:ro`,
+así que tiene que existir **antes** del `up`.
 
 ```bash
 mkdir -p ~/.ssl
 openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
   -keyout ~/.ssl/wetty.key -out ~/.ssl/wetty.crt \
   -subj "/CN=wetty.local" \
-  -addext "subjectAltName=DNS:wetty.local,IP:<IP-DE-LA-ASUS>,IP:127.0.0.1"
+  -addext "subjectAltName=DNS:wetty.local,DNS:localhost,IP:192.168.1.58,IP:172.17.100.147,IP:127.0.0.1"
 ```
 
-### 6.3 Modelo de whisper
+El contenedor corre como root, así que lee la clave en 0600 sin problema.
 
-El volumen `whisper-models` arranca vacío; hay que dejar el `.bin` dentro:
+### 6.3 Modelo de whisper
 
 ```bash
 docker compose -f docker/docker-compose.voice.yml run --rm --entrypoint sh whisper -c \
@@ -193,33 +262,35 @@ docker compose -f docker/docker-compose.voice.yml run --rm --entrypoint sh whisp
    https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin"
 ```
 
-(Confirma nombre de fichero y URL; también sirve `models/download-ggml-model.sh small`
-del propio whisper.cpp.)
+URL verificada: 487.601.967 bytes. La imagen trae `wget` y `curl`.
 
 ### 6.4 Levantar
 
 ```bash
 cd wetty2
-docker compose -f docker/docker-compose.voice.yml up --build
+TMATE_HOST=192.168.1.8 TMATE_PORT=2200 \
+  docker compose -f docker/docker-compose.voice.yml up -d --build
 docker compose -f docker/docker-compose.voice.yml exec ollama ollama pull qwen2.5-coder:3b
 ```
 
-Variables que acepta el compose: `TMATE_HOST`, `TMATE_PORT`, `LLM_MODEL`,
-`WHISPER_MODEL`, `WHISPER_LANG`, `OLLAMA_KEEP_ALIVE`.
+El primer `--build` compila whisper.cpp desde fuente para `sm_61` y **tarda**
+(descarga ~4 GB de bases CUDA 12.6 y compila los kernels). Después queda cacheado
+en la imagen `whisper:pascal`.
 
-**Confirma el destino de tmate**: el contenedor en producción usa
-`--ssh-host 192.168.1.4 --ssh-port 2200`, pero `~/.tmate.conf` de la laptop de origen
-apunta a `192.168.1.3:2200`. Ajusta `TMATE_HOST` a lo que corresponda desde la ASUS.
+Variables: `TMATE_HOST`, `TMATE_PORT`, `LLM_MODEL`, `WHISPER_MODEL`,
+`WHISPER_LANG`, `WHISPER_THREADS`, `OLLAMA_KEEP_ALIVE`.
+
+**Ojo con los puertos y la VRAM**: si tienes `open-webui` corriendo ocupa el
+3000, y cualquier otro Ollama (el del host en `127.0.0.1:11434`, o el que trae
+open-webui) compite por los mismos 4 GB.
 
 ### 6.5 Reparto de VRAM
 
-whisper y Ollama comparten tarjeta. `qwen2.5-coder:7b` en Q4 son ~4,7 GB y no cabe en
-4 GB ni estando solo. De ahí `qwen2.5-coder:3b` por defecto y `OLLAMA_KEEP_ALIVE=30s`,
-para que libere la VRAM entre dictados. Si la GPU de la ASUS tiene más memoria de la que
-supuse (asumí la GTX 1050 Ti de 4 GB del GL503GE), se puede subir el modelo: es una
-opción de configuración, no un cambio de diseño.
-
----
+Medido con whisper **y** Ollama los dos en la tarjeta: **2954 / 4096 MiB**, algo
+más de 1 GB libre, y la transcripción sigue en 0,89 s con el LLM residente.
+Whisper ocupa 837 MiB con `ggml-small`. `qwen2.5-coder:3b` entra con holgura; el
+`7b` en Q4 (~4,7 GB) no cabe ni estando solo, de ahí el `3b` por defecto y
+`OLLAMA_KEEP_ALIVE=30s`.
 
 ## 7. Desarrollo sin Docker
 
